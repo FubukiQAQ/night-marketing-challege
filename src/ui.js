@@ -20,6 +20,16 @@ const money = (n) => {
 };
 const pct = (n) => `${Math.round(n * 100)}%`;
 
+
+/** 重渲染前后保留滚动位置：菜谱速查 / 库存 / 整个 stage */
+export function keepScroll(renderFn) {
+  const nodes = [...document.querySelectorAll('#stage, #stage .scroll')];
+  const saved = nodes.map((n) => n.scrollTop);
+  renderFn();
+  const after = [...document.querySelectorAll('#stage, #stage .scroll')];
+  after.forEach((n, i) => { if (saved[i] != null) n.scrollTop = saved[i]; });
+}
+
 export function hud(G) {
   const s = G.s;
   const phaseName = { STOCK: '备货', PREP: '备餐', SELL: '出摊', SETTLE: '结算', META: '局外' }[s.phase] || s.phase;
@@ -83,15 +93,13 @@ export function renderStock(G) {
       const ing = G.ING[it.ingId];
       const out = it.stock <= 0;
       const users = G.ingredientUsers(it.ingId, 3);
-      const usedBy = users.length
-        ? `<div class="used-by">用于 ${users.join('、')}${G.ingredientUsers(it.ingId).length > 3 ? ' 等' : ''}</div>`
-        : '<div class="used-by">暂时没有用到它的菜</div>';
+      const all = G.ingredientUsers(it.ingId);
+      const usedBy = all.length
+        ? `用于 ${all.slice(0, 4).join('、')}${all.length > 4 ? ` 等 ${all.length} 道菜` : ''}`
+        : '暂时没有用到它的菜';
       return `<div class="item">
         <span>${icon(ing.sprite, 16)}</span>
-        <span>
-          <div class="item-name">${ing.name}</div>
-          ${usedBy}
-        </span>
+        <span class="item-name">${ing.name}</span>
         <span class="item-price">${money(it.price)}</span>
         <span class="item-stock">${out ? '售罄' : '×' + it.stock}</span>
         <span style="display:flex; gap:3px">
@@ -99,6 +107,7 @@ export function renderStock(G) {
           <button class="small" data-act="buy" data-s="${si}" data-i="${ii}" data-q="10" ${out ? 'disabled' : ''}>10</button>
           <button class="small" data-act="buy" data-s="${si}" data-i="${ii}" data-q="30" ${out ? 'disabled' : ''}>30</button>
         </span>
+        <div class="used-by">${usedBy}</div>
       </div>`;
     }).join('');
     return `<div class="sup ${sup.closed ? 'closed' : ''}">
@@ -118,8 +127,7 @@ export function renderStock(G) {
         <div class="dish-name">${f.name} ${tags} <span class="muted">· ${money(f.price)}</span></div>
         <div class="dish-recipe">${recipeText(G, f)}</div>
       </span>
-      <button class="small" data-act="buyDish" data-f="${f.id}" data-n="5"
-        ${canMake ? '' : 'disabled'}>买齐×5</button>
+      <button class="small" data-act="buyDish" data-f="${f.id}" data-n="5" ${canMake ? '' : 'disabled'}>+5 份料</button>
     </div>`;
   }).join('');
 
@@ -132,12 +140,12 @@ export function renderStock(G) {
     <div class="col-side">
       <div class="panel">
         <h3 class="panel-title">菜谱速查 · 买料之前先看这里</h3>
-        <div class="scroll" style="max-height:min(46vh, 430px)">${dishes}</div>
-        <div class="hint mt8">括号里是你手上的库存；「买齐×5」会从这个市场的供应商那里按 5 份的量补齐。</div>
+        <div class="scroll" id="scrollRecipe" style="max-height:min(46vh, 430px)">${dishes}</div>
+        <div class="hint mt8">括号里是你手上的库存。点「+5 份料」会按这道菜 5 份的用量去今天的供应商那里买，可以连点累加。</div>
       </div>
       <div class="panel mt8">
         <h3 class="panel-title">库存 ${used.toFixed(1)} / ${G.B.storage} 格</h3>
-        <div class="scroll" style="max-height:180px">${invRows}</div>
+        <div class="scroll" id="scrollInv" style="max-height:180px">${invRows}</div>
       </div>
     </div>
   </div>`;
@@ -294,6 +302,10 @@ function tagColor(tagId) {
 export function renderSellShell(G) {
   const s = G.s;
   el('stage').innerHTML = `<div id="sellwrap">
+    <div class="sell-top">
+      <span class="sell-clock">${icon('ico/state_clock.png', 20)} 剩余 <b id="sellleft">60</b><span class="unit">s</span></span>
+      <span class="sell-rev">${icon('ico/state_coin.png', 20)} <b id="sellrev">0</b></span>
+    </div>
     <canvas id="sellcanvas" width="640" height="360"></canvas>
     <div class="sellbar" id="sellstats"></div>
   </div>`;
@@ -316,6 +328,10 @@ export function updateSellStats(G) {
     const tier = G.tierOf(tr);
     return `<span class="pill">${tr.name}<b> X${X}</b>${tier ? ' · ' + tier.tier + '档' : ''}</span>`;
   }).join('');
+  const leftEl = el('sellleft');
+  if (leftEl) leftEl.textContent = Math.max(0, Math.round((G.B.sellTicks - S.tick) / 200));
+  const revEl = el('sellrev');
+  if (revEl) revEl.textContent = S.revenue.toFixed(0);
   dom.innerHTML = `
     <span class="pill">${icon('ico/state_sale.png', 14)} 卖出 <b>${S.served}</b></span>
     <span class="pill">${icon('ico/state_stockout.png', 14)} 流失 <b>${S.lost}</b></span>
