@@ -56,6 +56,7 @@ async function boot() {
   window.addEventListener('click', onClick);
   window.addEventListener('input', onChange);
   Audio.installUnlock();
+  Audio.loadTracks();
 
   const dev = new URLSearchParams(location.search).get('dev');
   if (dev === 'menuflow') {
@@ -85,6 +86,57 @@ async function boot() {
   showMenu();
 }
 
+
+
+/** 每次底栏被重写后，把播放器重新挂上去 */
+function mountPlayer() {
+  const bar = document.getElementById('bar');
+  if (!bar) return;
+  let host = bar.querySelector('#player');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'player';
+    bar.appendChild(host);
+  }
+  renderPlayer();
+}
+
+/* ---------------------------------------------------------------- BGM 播放器 */
+function renderPlayer() {
+  const st = Audio.getState();
+  const tr = st.track || { title: '无曲目', artist: '—' };
+  const bar = document.getElementById('bar');
+  const host = bar.querySelector('#player');
+  if (!host) return;
+  const pct = Math.round(st.volume * 100);
+  host.innerHTML = `
+    <div class="player">
+      <button class="small ghost" data-act="bgmPrev" title="上一首">◀</button>
+      <button class="small ghost" data-act="bgmToggle" title="播放 / 暂停">${st.playing ? '❙❙' : '▶'}</button>
+      <button class="small ghost" data-act="bgmNext" title="下一首">▶</button>
+      <div class="player-meta">
+        <b>${tr.title}</b><span>${tr.artist}</span>
+      </div>
+      <div class="player-pick">
+        <button class="small ghost" data-act="bgmFollow"
+          title="开启后按阶段自动切歌">${st.followPhase ? '跟随阶段' : '手动锁定'}</button>
+        <select class="player-select" data-act="bgmPickRaw">
+          ${st.tracks.map((x, i) => `<option value="${i}" ${i === st.index ? 'selected' : ''}>${x.title} · ${x.artist}</option>`).join('')}
+        </select>
+      </div>
+      <div class="player-vol">
+        <button class="small ghost" data-act="mute" title="静音">${st.muted ? '静' : '音'}</button>
+        <input type="range" min="0" max="100" value="${pct}" data-act="bgmVolRange">
+        <span class="tiny muted">${pct}%</span>
+      </div>
+    </div>`;
+}
+
+/** 播放器控件的通用壳，塞进底栏 */
+function playerShell(inner) {
+  return `<span class="spacer"></span><div id="player">${inner || ''}</div>`;
+}
+
 /* ---------------------------------------------------------------- 主菜单 */
 function showMenu() {
   cancelAnimationFrame(raf);
@@ -93,7 +145,7 @@ function showMenu() {
   const meta = pending && pending.meta ? pending.meta : null;
   const layerTotal = meta
     ? Object.values(meta.layers || {}).reduce((a, b) => a + b, 0) : 0;
-  Audio.play('menu');
+  Audio.playPhase('menu');
   setBackdrop('menu');
   document.getElementById('app').classList.add('menu-mode');
   renderMenu({
@@ -104,6 +156,7 @@ function showMenu() {
     savedAt: pending ? pending.savedAt : 0,
     layerTotal,
   });
+  mountPlayer();
 }
 
 function continueGame() {
@@ -306,13 +359,14 @@ function route() {
   document.getElementById('app').classList.remove('menu-mode');
   hud(G);
   switch (G.s.phase) {
-    case 'STOCK': Audio.play('stock'); setBackdrop('market'); renderStock(G); save(); break;
-    case 'PREP': Audio.play('prep'); setBackdrop('prep'); renderPrep(G); save(); break;
-    case 'SELL': Audio.play('sell'); setBackdrop('night'); startSellView(); break;
-    case 'SETTLE': Audio.play('sell'); setBackdrop('night'); renderSettle(G); save(); break;
-    case 'META': Audio.play('menu'); setBackdrop('menu'); renderMeta(G); save(); break;
-    default: Audio.play('stock'); renderStock(G);
+    case 'STOCK': Audio.playPhase('stock'); setBackdrop('market'); renderStock(G); save(); break;
+    case 'PREP': Audio.playPhase('prep'); setBackdrop('prep'); renderPrep(G); save(); break;
+    case 'SELL': Audio.playPhase('sell'); setBackdrop('night'); startSellView(); break;
+    case 'SETTLE': Audio.playPhase('sell'); setBackdrop('night'); renderSettle(G); save(); break;
+    case 'META': Audio.playPhase('menu'); setBackdrop('menu'); renderMeta(G); save(); break;
+    default: Audio.playPhase('stock'); renderStock(G);
   }
+  mountPlayer();
 }
 
 /* ---------------------------------------------------------------- 出摊 */
@@ -393,6 +447,25 @@ function onClick(ev) {
     }
     case 'wipe': {
       wipeSave();
+      break;
+    }
+    case 'bgmPrev': { Audio.prev(); renderPlayer(); break; }
+    case 'bgmNext': { Audio.next(); renderPlayer(); break; }
+    case 'bgmToggle': { Audio.toggle(); renderPlayer(); break; }
+    case 'bgmFollow': {
+      Audio.setFollowPhase(!Audio.getState().followPhase);
+      renderPlayer();
+      break;
+    }
+    case 'bgmPick': {
+      Audio.select(+t.dataset.i);
+      renderPlayer();
+      break;
+    }
+    case 'bgmVol': {
+      const v = parseFloat(t.dataset.v);
+      Audio.setVolume(v);
+      renderPlayer();
       break;
     }
     case 'mute': {
@@ -482,6 +555,17 @@ function onChange(ev) {
     G.setPrice(t.dataset.f, parseFloat(t.value) || 1);
     hud(G);
     save();
+    return;
+  }
+  if (t.dataset && t.dataset.act === 'bgmPickRaw') {
+    Audio.select(parseInt(t.value, 10) || 0);
+    renderPlayer();
+    return;
+  }
+  if (t.dataset && t.dataset.act === 'bgmVolRange') {
+    Audio.setVolume((parseFloat(t.value) || 0) / 100);
+    const lab = t.parentElement.querySelector('.tiny');
+    if (lab) lab.textContent = Math.round(Audio.getVolume() * 100) + '%';
   }
 }
 

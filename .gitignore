@@ -37,3 +37,7 @@ assets/art_hd/_raw/
 assets/art_hd/overview/
 assets/art_hd/_run.log
 assets/art_hd/_state.json
+_s[0-9]*/
+_t-*/
+_f-*.png
+_v51*.png

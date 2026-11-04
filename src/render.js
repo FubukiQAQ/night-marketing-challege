@@ -6,21 +6,19 @@ const W = 960, H = 540;
 /** 版面常量：HD 场景图层里摊位/台面/地面的大致位置。
  *  这些数是按 scene_night_near.png 的亮度分布估的，肉眼校对后改这里即可。 */
 export const LAYOUT = {
-  // 以下数值由 tools/analyze_layout.py 从 scene_night_*.png 合成图实测得出：
-  //   y=313 是台面最强水平边缘，暖光中心 x≈450，地面边缘 y≈465
-  counterY: 313,      // 台面基线（厨具底边）
-  utensil: 72,        // 厨具绘制尺寸（源图 64，放大到 72 更醒目）
-  utensilX0: 258,     // 第一件厨具 x（5 件居中于 x=450）
-  utensilStep: 78,    // 厨具间距
-  bulletY: 150,       // 灯串 y
-  bulletX0: 258,
-  bulletStep: 26,
-  groundY: 465,       // 顾客脚底线
-  customerW: 48,
-  customerH: 64,
-  queueX0: 648,       // 队列起始 x（右侧暖光边缘内）
-  queueStep: 68,
-  maxQueue: 4,
+  // 场景实测锚点（tools/analyze_layout.py）：台面边缘 y≈313，地面 y≈465，暖光中心 x≈450
+  // 人物放大 3x（48×64 → 144×192）后重排：厨具占左中，顾客占右侧，互不重叠
+  counterY: 344,      // 台面基线（厨具底边）
+  utensil: 120,       // 厨具绘制尺寸（源图 64 → 约 1.9x，与人物比例协调）
+  utensilX0: 48,      // 第一件厨具 x
+  utensilStep: 130,   // 厨具间距
+  utensilMax: 4,      // 台面上最多同时画 4 件（再多画会挤到顾客区）
+  groundY: 506,       // 顾客脚底线
+  customerW: 144,     // 顾客 48×64 → 3x
+  customerH: 192,
+  queueX0: 566,       // 队列起始 x
+  queueStep: 116,     // 队列间距（略小于人物宽度，形成自然的拥挤感）
+  maxQueue: 3,        // 同屏最多 3 位（再多会越界）
 };
 
 
@@ -61,12 +59,12 @@ export function renderSell(ctx, G, dt) {
   sceneDraw(ctx, 'scene_night_near', 0, 0, W, H);
 
   // ---------- 厨具
-  const uids = s.utensils.slice(0, 5);
+  const uids = s.utensils.slice(0, LAYOUT.utensilMax);
   uids.forEach((uid, i) => {
     const busy = S && S.jobs[uid] && S.jobs[uid].length > 0;
     const x = LAYOUT.utensilX0 + i * LAYOUT.utensilStep;
     const size = LAYOUT.utensil;
-    const y = LAYOUT.counterY - size + 8;
+    const y = LAYOUT.counterY - size;
     // 忙碌时热光
     if (busy) {
       ctx.save();
@@ -104,22 +102,23 @@ export function renderSell(ctx, G, dt) {
       if (state === 'happy') mood = 'happy';
       else if (state === 'urgent') mood = 'urgent';
       const bub = 'ico/tag_' + c.wantTag + '_' + (mood === 'happy' ? 'highlight' : mood === 'urgent' ? 'fragile' : 'normal') + '.png';
-      draw(ctx, bub, x + 8, y - 34, 32, 32);
+      draw(ctx, bub, x + LAYOUT.customerW / 2 - 32, y - 68, 64, 64);
 
       // 耐心条
       if (c.state === 'wait') {
         const ratio = 1 - c.waited / Math.max(1, c.patience);
-        ctx.fillStyle = 'rgba(10,14,20,0.85)';
-        ctx.fillRect(x + 6, y - 12, 36, 5);
+        const bw = LAYOUT.customerW - 24;
+        ctx.fillStyle = 'rgba(10,14,20,0.88)';
+        ctx.fillRect(x + 12, y - 18, bw, 8);
         ctx.fillStyle = ratio > 0.4 ? '#ffc163' : '#ff5c7a';
-        ctx.fillRect(x + 6, y - 12, Math.max(0, 36 * ratio), 5);
+        ctx.fillRect(x + 12, y - 18, Math.max(0, bw * ratio), 8);
       }
     });
   }
 
   // ---------- 飘字
   if (S) {
-    ctx.font = 'bold 16px monospace';
+    ctx.font = 'bold 22px monospace';
     ctx.textAlign = 'center';
     S.floaters = S.floaters.filter((f) => f.age < 1.6);
     S.floaters.forEach((f, i) => {

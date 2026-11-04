@@ -1,0 +1,110 @@
+/* ---------------------------------------------- BGM 播放器 */
+#player {
+  display: flex;
+  align-items: center;
+  margin-left: 12px;
+}
+.player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.player > button {
+  padding: 4px 9px;
+  min-width: 30px;
+  font-size: 13px;
+  line-height: 1;
+}
+.player-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 132px;
+  max-width: 190px;
+  padding: 0 4px;
+  line-height: 1.25;
+}
+.player-meta b {
+  font-size: 12px;
+  font-weight: normal;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-meta span {
+  font-size: 11px;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.player-select {
+  font: inherit;
+  font-size: 12px;
+  max-width: 190px;
+  padding: 5px 10px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+.player-select option {
+  background: #14141a;
+  color: var(--text);
+}
+.player-vol {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 4px;
+}
+.player-vol input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 84px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  outline: none;
+  cursor: pointer;
+}
+.player-vol input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 0;
+}
+.player-vol input[type='range']::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 0;
+}
+
+@media (max-width: 1320px) {
+  .player-meta { min-width: 96px; max-width: 120px; }
+  .player-select { max-width: 130px; }
+  .player-vol input[type='range'] { width: 60px; }
+}
+@media (max-width: 1120px) {
+  .player-pick { display: none; }
+}
+@media (max-width: 900px) {
+  #player { display: none; }
+}

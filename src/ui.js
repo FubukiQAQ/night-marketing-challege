@@ -210,7 +210,8 @@ export function renderStock(G) {
   el('bar').innerHTML = `
     <span>采购会消耗分钟：剩余 ${Math.round(s.minutesLeft)} 分钟</span>
     <span class="spacer"></span>
-    <button class="primary" data-act="toPrep">去备餐 →</button>`;
+    <button class="primary" data-act="toPrep">去备餐 →</button>
+    <span class="spacer"></span>`;
 }
 
 /* ---------------------------------------------------------------- 备餐 */
@@ -319,7 +320,8 @@ export function renderPrep(G) {
     <span class="muted tiny">剩余 ${Math.round(s.minutesLeft)} 分钟 · 备餐消耗分钟</span>
     <span class="spacer"></span>
     ${issues.filter((i) => i.level === 'error').map((i) => `<span class="warn tiny">⚠ ${i.msg}</span>`).join('')}
-    <button class="primary" data-act="toSell">出摊 →</button>`;
+    <button class="primary" data-act="toSell">出摊 →</button>
+    <span class="spacer"></span>`;
 }
 
 
@@ -370,7 +372,8 @@ export function renderSellShell(G) {
     <span class="muted tiny">出摊中：顾客排队 → 出餐 → 收钱。备好的成品可以立刻取走，没备的要现做。</span>
     <span class="spacer"></span>
     <button class="small" data-act="speed">1x</button>
-    <button data-act="skipSell">打烊结算</button>`;
+    <button data-act="skipSell">打烊结算</button>
+    <span class="spacer"></span>`;
 }
 
 export function updateSellStats(G) {
@@ -428,7 +431,7 @@ export function renderSettle(G) {
           ${icon(b.icon, 36)}<b>${b.name}</b><span>${b.desc}</span></div>`).join('')}
       </div>
     </div>`;
-  el('bar').innerHTML = `<span class="muted tiny">选一张卡继续</span>`;
+  el('bar').innerHTML = `<span class="muted tiny">选一张卡继续</span><span class="spacer"></span>`;
 }
 
 /* ---------------------------------------------------------------- 局外 */
@@ -467,5 +470,6 @@ export function renderMeta(G) {
       </div>
     </div>`;
   el('bar').innerHTML = `<span class="muted tiny">层数和技能都会带进下一轮</span>
-    <span class="spacer"></span><button class="primary" data-act="nextRun">开始第 ${s.run + 1} 轮 →</button>`;
+    <span class="spacer"></span><button class="primary" data-act="nextRun">开始第 ${s.run + 1} 轮 →</button>
+    <span class="spacer"></span>`;
 }

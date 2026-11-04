@@ -1,0 +1,26 @@
+[
+  {
+    "file": "sound/C418 - Aria Math.mp3",
+    "title": "Aria Math",
+    "artist": "C418",
+    "phase": "menu"
+  },
+  {
+    "file": "sound/C418 - Moog City 2.mp3",
+    "title": "Moog City 2",
+    "artist": "C418",
+    "phase": "sell"
+  },
+  {
+    "file": "sound/ConcernedApe - Spring (Wild Horseradish Jam).mp3",
+    "title": "Spring (Wild Horseradish Jam)",
+    "artist": "ConcernedApe",
+    "phase": "stock"
+  },
+  {
+    "file": "sound/ConcernedApe - Summer (Nature's Crescendo).mp3",
+    "title": "Summer (Nature's Crescendo)",
+    "artist": "ConcernedApe",
+    "phase": "prep"
+  }
+]

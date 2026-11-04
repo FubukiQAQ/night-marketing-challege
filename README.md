@@ -77,7 +77,7 @@ python -m http.server 8777
 - **数据**：`配表/不烧心夜市-配表.xlsx`（13 个 sheet）是唯一真源，`tools/build_tables.py` 生成表 + 校验报告，`tools/export_game_data.py` 导出 `src/data/*.json`。
 - **美术**：`assets/art_hd/` 源图 → `tools/pack_atlas_hd.py` 打包成 6 张图集（426 帧），场景大图保持独立文件。
 - **字体**：缝合像素字体 Fusion Pixel 12px（OFL，见下）。
-- **音频**：`src/audio.js` 双 audio 元素交叉淡入，首次交互后解锁自动播放。
+- **音频**：`src/audio.js` 双 audio 元素交叉淡入；曲目表 `src/data/tracks.json`，支持跟随阶段或手动锁曲。
 
 ```
 index.html / styles.css     入口与设计系统
@@ -122,6 +122,7 @@ python tools/check_text.py      # 扫一遍文本文件有没有编码乱码
 | `v0.3.1` | 出摊计时/收益改大字、买料累加、重渲染保留滚动位置 |
 | `v0.4` | 主菜单 + 本地存档（run/meta 分离、迁移、清档确认）、图标放大 |
 | `v0.5` | **HD 精细像素材质全套替换**（960×540 五层视差场景、82 餐品、126 食材、13 厨具、8 类顾客×5 态）+ 分场景 BGM |
+| `v0.5.1` | 人物放大 3 倍并重排版面；BGM 改为可选曲目的播放器（跟随阶段 / 手动锁定 / 音量） |
 
 ---
 
