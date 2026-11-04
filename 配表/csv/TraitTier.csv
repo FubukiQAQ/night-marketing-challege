@@ -1,0 +1,73 @@
+﻿trait_id,词条名,档位,层数门槛 min_x,effect_op,v1,v2,作用范围,档位描述
+fastest,速度为王,1,20,time_reduce_pct,20,0,own_tag,速食出餐时间 -20%
+fastest,速度为王,2,27,time_reduce_pct,25,0,own_tag,速食出餐时间 -25%
+fastest,速度为王,3,36,time_reduce_pct,30,0,own_tag,速食出餐时间 -30%
+fastest,速度为王,4,49,time_reduce_pct,35,0,all_half,出餐 -35%，且全摊餐品再 -17%
+fastest,速度为王,5,66,time_reduce_pct,40,0,all_half,出餐 -40%，且全摊餐品再 -20%
+fastest,速度为王,6,89,time_reduce_pct,45,0,all_half,出餐 -45%，且全摊餐品再 -22%
+full,吃饱了,1,15,extra_buy,20,1,own_tag,买主食时 20% 概率多卖 1 份非主食
+full,吃饱了,2,20,extra_buy,30,1,own_tag,买主食时 30% 概率多卖 1 份非主食
+full,吃饱了,3,27,extra_buy,40,2,own_tag,买主食时 40% 概率多卖 2 份非主食
+full,吃饱了,4,36,extra_buy,50,2,own_tag,买主食时 50% 概率多卖 2 份非主食
+full,吃饱了,5,49,extra_buy,60,3,own_tag,买主食时 60% 概率多卖 3 份非主食
+full,吃饱了,6,66,extra_buy,70,3,own_tag,买主食时 70% 概率多卖 3 份非主食
+spicybuff,好辣！,1,25,extra_buy_drink,50,1,own_tag,买辣货 50% 概率多买 1 份饮料
+spicybuff,好辣！,2,34,extra_buy_drink,50,2,own_tag,买辣货 50% 概率多买 2 份饮料
+spicybuff,好辣！,3,45,extra_buy_drink,55,3,own_tag,买辣货 55% 概率多买 3 份饮料
+spicybuff,好辣！,4,61,extra_buy_drink,60,4,own_tag,买辣货 60% 概率多买 4 份饮料
+spicybuff,好辣！,5,82,extra_buy_drink,65,5,own_tag,买辣货 65% 概率多买 5 份饮料
+spicybuff,好辣！,6,111,extra_buy_drink,75,6,own_tag,买辣货 75% 概率多买 6 份饮料
+madedrink,现做饮品,1,20,time_reduce_pct,20,0,own_tag,现做饮品制作时间 -20%
+madedrink,现做饮品,2,27,time_reduce_pct,26,0,own_tag,现做饮品制作时间 -26%
+madedrink,现做饮品,3,36,time_reduce_pct,32,0,own_tag,现做饮品制作时间 -32%
+madedrink,现做饮品,4,49,time_reduce_pct,38,0,own_tag,现做饮品制作时间 -38%
+madedrink,现做饮品,5,66,time_reduce_pct,44,0,own_tag,现做饮品制作时间 -44%
+madedrink,现做饮品,6,89,time_reduce_pct,50,0,own_tag,现做饮品制作时间 -50%
+madefood,现做的不烧心,1,20,profit_up_pct,10,0,own_tag,现做食品利润 +10%
+madefood,现做的不烧心,2,27,profit_up_pct,16,0,own_tag,现做食品利润 +16%
+madefood,现做的不烧心,3,36,profit_up_pct,22,0,own_tag,现做食品利润 +22%
+madefood,现做的不烧心,4,49,profit_up_pct,28,0,own_tag,现做食品利润 +28%
+madefood,现做的不烧心,5,66,profit_up_pct,34,0,own_tag,现做食品利润 +34%
+madefood,现做的不烧心,6,89,profit_up_pct,40,0,own_tag,现做食品利润 +40%
+iceice,冰冰冰,1,1,bypass_finished,1,0,own_tag,凉菜无需成品即可交付（直接扣食材）
+iceice,冰冰冰,2,2,qty_cap_up,1,0,own_tag,凉菜单日可售份数上限 +1
+iceice,冰冰冰,3,3,price_up_pct,5,0,own_tag,凉菜售价 +5%
+iceice,冰冰冰,4,5,qty_cap_up,2,0,own_tag,凉菜份数上限 +2（累计 +3）
+iceice,冰冰冰,5,8,price_up_pct,10,0,own_tag,凉菜售价 +10%
+iceice,冰冰冰,6,13,qty_cap_up,3,0,own_tag,凉菜份数上限 +3（累计 +6）
+sizzle,滋滋响,1,15,extra_fry,10,1,own_tag,炸货成交 10% 概率追加 1 份出餐
+sizzle,滋滋响,2,20,extra_fry,15,1,own_tag,炸货成交 15% 概率追加 1 份出餐
+sizzle,滋滋响,3,27,extra_fry,20,1,own_tag,炸货成交 20% 概率追加 1 份出餐
+sizzle,滋滋响,4,36,extra_fry,25,2,own_tag,炸货成交 25% 概率追加 2 份出餐
+sizzle,滋滋响,5,49,extra_fry,30,2,own_tag,炸货成交 30% 概率追加 2 份出餐
+sizzle,滋滋响,6,66,extra_fry,35,3,own_tag,炸货成交 35% 概率追加 3 份出餐
+cheers,干杯,1,10,profit_up_pct,8,1,own_tag,饮料利润 +8%，单客可带 1 瓶
+cheers,干杯,2,14,profit_up_pct,12,1,own_tag,饮料利润 +12%，单客可带 1 瓶
+cheers,干杯,3,20,profit_up_pct,16,2,own_tag,饮料利润 +16%，单客可带 2 瓶
+cheers,干杯,4,28,profit_up_pct,20,2,own_tag,饮料利润 +20%，单客可带 2 瓶
+cheers,干杯,5,39,profit_up_pct,24,3,own_tag,饮料利润 +24%，单客可带 3 瓶
+cheers,干杯,6,55,profit_up_pct,28,3,own_tag,饮料利润 +28%，单客可带 3 瓶
+ember,炭火气,1,15,streak_cap_up,3,2,own_tag,连击上限 3，满意度 +2%
+ember,炭火气,2,20,streak_cap_up,4,4,own_tag,连击上限 4，满意度 +4%
+ember,炭火气,3,27,streak_cap_up,5,6,own_tag,连击上限 5，满意度 +6%
+ember,炭火气,4,36,streak_cap_up,6,8,own_tag,连击上限 6，满意度 +8%
+ember,炭火气,5,49,streak_cap_up,7,10,own_tag,连击上限 7，满意度 +10%
+ember,炭火气,6,66,streak_cap_up,8,12,own_tag,连击上限 8，满意度 +12%
+warm,热乎,1,10,freshness_slow_pct,15,30,own_tag,汤羹风味衰减 -15%，顾客耐心 +30 tick
+warm,热乎,2,14,freshness_slow_pct,22,60,own_tag,汤羹风味衰减 -22%，顾客耐心 +60 tick
+warm,热乎,3,20,freshness_slow_pct,29,90,own_tag,汤羹风味衰减 -29%，顾客耐心 +90 tick
+warm,热乎,4,28,freshness_slow_pct,36,120,own_tag,汤羹风味衰减 -36%，顾客耐心 +120 tick
+warm,热乎,5,39,freshness_slow_pct,43,150,own_tag,汤羹风味衰减 -43%，顾客耐心 +150 tick
+warm,热乎,6,55,freshness_slow_pct,50,180,own_tag,汤羹风味衰减 -50%，顾客耐心 +180 tick
+sugarhigh,甜上头,1,10,satisfaction_up,0.2,5,own_tag,甜点顾客满意度 +0.2 星，QTE 窗口 +5%
+sugarhigh,甜上头,2,14,satisfaction_up,0.3,8,own_tag,甜点顾客满意度 +0.3 星，QTE 窗口 +8%
+sugarhigh,甜上头,3,20,satisfaction_up,0.4,11,own_tag,甜点顾客满意度 +0.4 星，QTE 窗口 +11%
+sugarhigh,甜上头,4,28,satisfaction_up,0.5,14,own_tag,甜点顾客满意度 +0.5 星，QTE 窗口 +14%
+sugarhigh,甜上头,5,39,satisfaction_up,0.6,17,own_tag,甜点顾客满意度 +0.6 星，QTE 窗口 +17%
+sugarhigh,甜上头,6,55,satisfaction_up,0.7,20,own_tag,甜点顾客满意度 +0.7 星，QTE 窗口 +20%
+oldbrine,老卤,1,15,qty_cap_up,1,0,own_tag,卤味单日可售份数上限 +1
+oldbrine,老卤,2,20,qty_cap_up,2,1,own_tag,卤味份数上限 +2，跨夜保留 1 份免风味惩罚
+oldbrine,老卤,3,27,qty_cap_up,3,1,own_tag,卤味份数上限 +3，跨夜保留 1 份免风味惩罚
+oldbrine,老卤,4,36,qty_cap_up,4,2,own_tag,卤味份数上限 +4，跨夜保留 2 份免风味惩罚
+oldbrine,老卤,5,49,qty_cap_up,5,2,own_tag,卤味份数上限 +5，跨夜保留 2 份免风味惩罚
+oldbrine,老卤,6,66,qty_cap_up,6,3,own_tag,卤味份数上限 +6，跨夜保留 3 份免风味惩罚

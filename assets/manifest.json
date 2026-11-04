@@ -1,0 +1,46 @@
+{
+  "style": "HD-feel medium-density pixel art",
+  "native_canvas": [
+    640,
+    360
+  ],
+  "scaling": "nearest-neighbour integer only",
+  "palette": "assets/palette.json",
+  "counts_by_category": {
+    "char": 150,
+    "food": 112,
+    "fx": 22,
+    "ico": 122,
+    "ing": 126,
+    "scene": 33,
+    "ui": 74,
+    "utensil": 52
+  },
+  "total_source_png": 691,
+  "png_mode": "P (PNG-8), indexed alpha",
+  "scene_layers": 12,
+  "dishes": 82,
+  "ingredients": 126,
+  "utensils": 13,
+  "utensil_frames": 52,
+  "tag_icons": 12,
+  "trait_icons": 12,
+  "resonance_icons": 8,
+  "text_baked": "none",
+  "animation": {
+    "regular_fps": 8,
+    "critical_fps": 12,
+    "qte_ring_frames": 8
+  },
+  "atlas_format": "TexturePacker JSON hash",
+  "atlas_max_size": [
+    1024,
+    2048
+  ],
+  "notes": [
+    "Large parallax layers remain individual PNGs to avoid oversized atlases.",
+    "Special portraits use 48 or fewer source colors per asset.",
+    "Source generator scripts are included for deterministic revisions.",
+    "Ingredient names are original semantic IDs because no external ingredient spreadsheet was supplied."
+  ]
+}

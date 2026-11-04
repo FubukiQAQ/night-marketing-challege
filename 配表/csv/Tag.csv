@@ -1,0 +1,13 @@
+﻿tag_id,名称,需求权重,定位,对应词条,餐品数,备注
+fast,速食,1.0,方便面、粉面、关东煮等出餐快的热食,fastest,8,
+staple,主食,0.9,能吃饱的饭面类，客单价核心,full,7,
+spicy,魔鬼辣,0.85,重口味辣货，年轻人偏好,spicybuff,8,
+fried,炸货,1.1,油炸食品，夜市第一香气源,sizzle,11,
+madedish,现做食品,1.0,摊位现场烹饪的非油炸热食,madefood,12,
+madedrink,现做饮品,0.9,现榨现调的饮品,madedrink,11,
+drink,饮品,1.2,开罐即走的包装饮料，吞吐保底,cheers,9,
+cold,凉菜,0.7,无需加热的冷盘,iceice,11,
+grilled,烤物,1.0,碳火/铁板类，烟火气来源,ember,10,
+soup,汤羹,0.65,汤、粥、羹，暖胃且耐放,warm,9,
+dessert,甜点,0.8,甜品糖水，女性与夜间客偏好,sugarhigh,14,
+braised,卤味,0.7,卤煮酱货，耐存放、可提前备,oldbrine,10,

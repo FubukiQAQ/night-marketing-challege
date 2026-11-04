@@ -1,0 +1,83 @@
+﻿food_id,餐品名,标签1,标签2,标签3,摊位空间,所需厨具,无厨具可售成品,出餐tick,预加工交付tick,建议售价,单份成本,毛利率,风味衰减k,解锁条件,特性触发,特性目标,N,增量,概率,条件,特性启用,配方摘要
+f_instant_noodle,方便面,fast,,,1,pot,否,50,5,14.5,3.5,76%,0.0045,初始,per_sold,own_tag,8,1,0,,是,方便面x1
+f_sour_spicy_noodle,酸辣粉,spicy,madedish,staple,4,pot,否,100,5,25.0,6.8,73%,0.004,初始,per_sold,highest,4,2,0,,是,米粉x1 + 汤x1 + 辣椒面x1 + 醋x1
+f_luosifen,螺蛳粉,spicy,madedish,staple,4,pot,否,100,5,41.5,12.0,71%,0.004,解锁:第2天,per_sold,own_tag_noreq,4,1,0,,是,米粉x1 + 蔬菜x2 + 汤x1 + 麻辣底料x1
+f_starch_sausage,淀粉肠,fast,fried,,2,fryer,是,50,5,9.5,2.0,79%,0.0045,初始,per_sold,random_active,16,1,0,,是,淀粉肠x1
+f_pepper_sausage,黑椒肉肠,fast,fried,,2,fryer,是,50,5,11.0,2.5,77%,0.0045,初始,per_sold,random_active,16,1,0,,是,黑椒肉肠x1
+f_turkey_noodle,火鸡面,fast,spicy,,2,pot,是,50,5,16.5,4.1,75%,0.0045,解锁:第2天,per_sold_chance,own_tag,1,1,0.1,,是,方便面x1 + 调料x1
+f_oden,关东煮,fast,,,6,pot,否,10,5,17.5,4.5,74%,0.0045,解锁:第3天,per_sold_chance,own_tag,4,2,0.2,,是,关东煮串x1 + 火锅小料x1
+f_malatang,麻辣烫,fast,spicy,,4,pot,否,50,5,30.5,8.5,72%,0.0045,初始,per_sold_chance,own_tag,4,2,0.2,,是,火锅小料x1 + 蔬菜x2 + 麻辣底料x1
+f_chicken_steak,炸鸡排,fast,fried,madedish,2,fryer,是,50,5,17.5,4.5,74%,0.0045,初始,on_phase_enter,all_active,1,1,0,,是,鸡排x1
+f_fried_leg,炸鸡腿,fast,fried,madedish,2,fryer,是,50,5,17.5,4.5,74%,0.0045,解锁:第2天,on_phase_enter,all_active,1,1,0,,是,鸡腿x1
+f_whole_chicken,炸全鸡,fried,madedish,,6,fryer,是,100,5,89.5,27.0,70%,0.0055,解锁:单日售出20份,on_phase_enter,all_active,1,5,0,,是,鸡肉x3
+f_fries,炸薯条,fried,madedish,,1,fryer,是,50,5,7.0,1.2,83%,0.0055,初始,on_phase_exit,all_active,1,1,0,,是,土豆x1
+f_potato_tower,炸薯塔,fried,madedish,,2,fryer,是,50,5,7.0,1.2,83%,0.0055,解锁:第3天,on_phase_exit,all_active,1,1,0,,是,土豆x1
+f_popcorn_chicken,炸鸡米花,fried,,,2,fryer,是,40,5,16.0,4.0,75%,0.0055,解锁:第3天,per_sold,own_tag,8,1,0,,是,鸡米花x1
+f_squid_ring,炸鱿鱼圈,fried,,,2,fryer,是,40,5,21.0,5.5,74%,0.0055,解锁:第4天,per_sold,own_tag,8,1,0,,是,鱿鱼圈x1
+f_lotus_box,炸藕盒,fried,madedish,,2,fryer,是,50,5,17.5,4.5,74%,0.0055,解锁:第4天,per_sold,own_tag,4,1,0,,是,藕盒x1
+f_fried_niangao,炸年糕,fried,,,1,fryer,是,40,5,13.0,3.0,77%,0.0055,解锁:第3天,per_sold,own_tag,8,1,0,,是,年糕x1 + 辣椒面x1
+f_lemon_water,冰鲜柠檬水,madedrink,,,3,ice_maker,是,20,5,13.0,3.1,76%,0.006,初始,on_first_sold,own_tag,1,5,0,space_gte:4,是,柠檬x1 + 糖浆x1 + 冰块x1
+f_lemonade,柠檬水,drink,,,0,,是,0,5,7.0,2.4,66%,0.006,初始,on_first_sold,highest,1,1,0,,是,柠檬水x1
+f_cola,可乐,drink,,,0,,是,0,5,6.5,2.2,66%,0.006,初始,on_first_sold,highest,1,1,0,,是,可乐x1
+f_soda,汽水,drink,,,0,,是,0,5,6.0,2.0,67%,0.006,初始,on_first_sold,highest,1,1,0,,是,汽水x1
+f_watermelon_juice,鲜榨西瓜汁,madedrink,,,5,juicer,否,20,5,11.0,2.5,77%,0.006,解锁:第2天,on_first_sold,own_tag,1,2,0,space_lte:3,是,西瓜x1 + 冰块x1
+f_orange_juice,鲜榨橙汁,madedrink,,,5,juicer,否,20,5,10.5,2.3,78%,0.006,解锁:第3天,on_first_sold,own_tag,1,2,0,space_lte:3,是,橙子x1 + 冰块x1
+f_sour_plum,酸梅汤,drink,,,1,ice_maker,是,0,5,5.5,1.8,67%,0.006,初始,on_first_sold,highest,1,1,0,,是,酸梅汤x1
+f_mango_pomelo,杨枝甘露,madedrink,dessert,,3,blender,是,30,5,23.5,6.3,73%,0.006,解锁:第4天,on_first_sold,highest,1,5,0,,是,椰奶x1 + 西米x1 + 芒果x1 + 西柚x1
+f_mango_sago,芒果西米露,madedrink,dessert,,3,blender,是,30,5,18.5,4.8,74%,0.006,解锁:第4天,on_first_sold,lowest,1,5,0,,是,椰奶x1 + 西米x1 + 芒果x1
+f_soy_milk,豆浆,madedrink,,,2,soymilk,是,20,5,7.0,1.1,84%,0.006,初始,on_first_sold,own_tag,1,1,0,space_gte:4,是,大豆x1 + 白糖x1
+f_coconut_milk,椰奶,drink,,,1,,是,0,5,6.0,2.0,67%,0.006,解锁:第2天,on_first_sold,highest,1,1,0,,是,椰奶x1
+f_bubble_tea,珍珠奶茶,madedrink,dessert,,3,blender,是,30,5,19.0,5.0,74%,0.006,解锁:第3天,per_sold,own_tag,4,1,0,,是,奶茶粉x1 + 芋圆x1 + 炼乳x1
+f_lemon_tea,手打柠檬茶,madedrink,,,3,ice_maker,是,20,5,14.0,3.3,76%,0.006,解锁:第3天,per_sold,own_tag,8,1,0,,是,茶叶x1 + 柠檬x1 + 糖浆x1
+f_coconut_latte,生椰拿铁,madedrink,,,2,blender,是,30,5,18.5,4.8,74%,0.006,解锁:第5天,per_sold,own_tag,4,1,0,,是,咖啡液x1 + 椰奶x1 + 冰块x1
+f_strawberry_shake,草莓奶昔,madedrink,dessert,,2,blender,是,30,5,18.5,4.8,74%,0.006,解锁:第5天,per_sold,own_tag,4,1,0,,是,草莓x1 + 炼乳x1 + 冰块x1
+f_passion_soda,百香果气泡,madedrink,,,2,ice_maker,是,20,5,20.0,5.3,74%,0.006,解锁:第4天,per_sold,own_tag,8,1,0,,是,百香果x1 + 汽水x1 + 糖浆x1
+f_iced_tea,冰红茶,drink,,,0,,是,0,5,7.0,2.4,66%,0.006,初始,on_first_sold,highest,1,1,0,,是,冰红茶x1
+f_water,矿泉水,drink,,,0,,是,0,5,4.5,1.2,73%,0.006,初始,on_first_sold,highest,1,1,0,,是,矿泉水x1
+f_oolong,乌龙茶,drink,,,0,,是,0,5,8.0,2.8,65%,0.006,解锁:第3天,on_first_sold,highest,1,1,0,,是,乌龙茶x1
+f_herbal_tea,凉茶,drink,,,0,,是,0,5,7.0,2.5,64%,0.006,解锁:第4天,on_first_sold,highest,1,1,0,,是,凉茶x1
+f_cucumber,拍黄瓜,cold,,,2,fridge,是,20,5,10.5,2.3,78%,0.002,初始,per_sold,own_tag,4,1,0,,是,黄瓜x1 + 蒜蓉x1 + 醋x1
+f_wood_ear,凉拌木耳,cold,,,2,fridge,是,20,5,15.5,3.9,75%,0.002,初始,per_sold,own_tag,4,1,0,,是,木耳x1 + 调料x1 + 醋x1
+f_kelp,凉拌海带丝,cold,,,2,fridge,是,20,5,11.5,2.6,77%,0.002,初始,per_sold,own_tag,4,1,0,,是,海带丝x1 + 调料x1 + 辣椒面x1
+f_fuzhu,凉拌腐竹,cold,,,2,fridge,是,20,5,12.0,2.8,77%,0.002,解锁:第2天,per_sold,own_tag,4,1,0,,是,腐竹x1 + 调料x1
+f_tofu_skin,凉拌豆皮,cold,,,2,fridge,是,20,5,11.5,2.6,77%,0.002,解锁:第2天,per_sold,own_tag,4,1,0,,是,豆皮x1 + 调料x1
+f_vermicelli,凉拌粉丝,cold,,,2,fridge,是,20,5,14.0,3.4,76%,0.002,解锁:第3天,per_sold,own_tag,4,1,0,,是,薯粉x1 + 调料x1
+f_lemon_claw,柠檬鸡爪,cold,braised,,2,fridge,是,20,5,30.5,8.5,72%,0.002,解锁:第3天,per_sold,own_tag,4,1,0,,是,鸡爪x1 + 柠檬x1 + 辣椒面x1
+f_century_egg,凉拌皮蛋,cold,,,2,fridge,是,20,5,14.0,3.3,76%,0.002,解锁:第2天,per_sold,own_tag,4,1,0,,是,皮蛋x1 + 香菜x1 + 调料x1
+f_grilled_gluten,烤面筋,grilled,,,2,grill,是,60,5,12.5,2.9,77%,0.005,解锁:厨具烤炉,per_sold,own_tag,8,1,0,,是,面筋x1 + 孜然x1
+f_lamb_skewer,烤羊肉串,grilled,,,2,grill,是,50,5,20.5,5.4,74%,0.005,解锁:厨具烤炉,per_sold,own_tag,4,1,0,,是,羊肉串x1 + 孜然x1
+f_beef_skewer,烤牛肉串,grilled,,,2,grill,是,50,5,22.0,5.9,73%,0.005,解锁:厨具烤炉,per_sold,own_tag,4,1,0,,是,牛肉串x1 + 孜然x1
+f_grilled_wing,烤鸡翅,grilled,,,2,grill,是,60,5,19.0,5.0,74%,0.005,解锁:厨具烤炉,per_sold,own_tag,4,1,0,,是,鸡翅串x1 + 辣椒面x1
+f_grilled_claw,烤鸡爪,grilled,,,2,grill,是,60,5,23.5,6.4,73%,0.005,解锁:厨具烤炉,per_sold,own_tag,4,1,0,,是,鸡爪x1 + 孜然x1
+f_grilled_leek,烤韭菜,grilled,,,1,grill,是,40,5,9.5,1.9,80%,0.005,解锁:厨具烤炉,per_sold,own_tag,8,1,0,,是,韭菜x1 + 孜然x1
+f_grilled_corn,烤玉米,grilled,,,1,grill,是,50,5,11.5,2.6,77%,0.005,解锁:厨具烤炉,per_sold,own_tag,8,1,0,,是,玉米x1 + 调料x1
+f_teppan_squid,铁板鱿鱼,grilled,madedish,,3,griddle,是,40,5,27.0,7.5,72%,0.005,解锁:厨具铁板,per_sold,own_tag,4,1,0,,是,鱿鱼x1 + 辣椒面x1
+f_teppan_tofu,铁板豆腐,grilled,madedish,,2,griddle,是,40,5,8.5,1.7,80%,0.005,解锁:厨具铁板,per_sold,own_tag,4,1,0,,是,豆腐x1 + 辣椒面x1
+f_grilled_oyster,烤生蚝,grilled,,,2,grill,是,70,5,43.0,12.5,71%,0.005,解锁:厨具烤炉,per_sold,own_tag,2,1,0,,是,生蚝x1 + 蒜蓉x1
+f_hot_sour_soup,酸辣汤,soup,spicy,,2,pot,否,30,5,20.0,5.3,74%,0.0015,解锁:第3天,per_sold,own_tag,4,1,0,,是,汤x1 + 鸡蛋x1 + 醋x1 + 辣椒面x1
+f_seaweed_soup,紫菜蛋花汤,soup,,,2,soup_pot,否,30,5,22.5,6.0,73%,0.0015,解锁:厨具汤桶,per_sold,own_tag,8,1,0,,是,汤x1 + 鸡蛋x1 + 海带丝x1
+f_pepper_soup,胡辣汤,soup,spicy,,3,soup_pot,否,30,5,27.0,7.5,72%,0.0015,解锁:厨具汤桶,per_sold,own_tag,4,1,0,,是,汤x1 + 面粉x1 + 辣椒面x1 + 面筋x1
+f_congee,皮蛋瘦肉粥,soup,staple,,4,rice_cooker,否,40,5,32.5,9.2,72%,0.0015,解锁:厨具电饭煲,per_sold,own_tag,4,1,0,,是,大米x1 + 皮蛋x1 + 猪肉x1
+f_plain_congee,白粥,soup,staple,,2,rice_cooker,否,30,5,7.0,1.2,83%,0.0015,初始,per_sold,own_tag,8,1,0,,是,大米x1
+f_tremella,银耳羹,soup,dessert,,2,soup_pot,否,30,5,14.0,3.3,76%,0.0015,解锁:厨具汤桶,per_sold,own_tag,4,1,0,,是,木耳x1 + 白糖x1
+f_tomato_beef_soup,番茄牛腩汤,soup,,,3,soup_pot,否,40,5,47.0,13.7,71%,0.0015,解锁:厨具汤桶,per_sold,own_tag,4,1,0,,是,汤x1 + 牛肉x1 + 洋葱x1
+f_lotus_starch,藕粉羹,soup,dessert,,2,soup_pot,否,30,5,12.0,2.8,77%,0.0015,解锁:厨具汤桶,per_sold,own_tag,8,1,0,,是,藕片x1 + 白糖x1
+f_grass_jelly,芋圆烧仙草,dessert,,,3,blender,是,30,5,22.5,6.0,73%,0.003,解锁:第4天,per_sold,own_tag,4,1,0,,是,芋圆x1 + 仙草x1 + 炼乳x1
+f_double_skin,双皮奶,dessert,,,2,steamer,是,40,5,11.0,2.5,77%,0.003,解锁:厨具蒸笼,per_sold,own_tag,4,1,0,,是,炼乳x1 + 鸡蛋x1
+f_red_bean_soup,红豆沙,dessert,,,2,soup_pot,是,30,5,10.5,2.3,78%,0.003,解锁:厨具汤桶,per_sold,own_tag,8,1,0,,是,红豆x1 + 白糖x1
+f_mung_bean_soup,绿豆沙,dessert,,,2,soup_pot,是,30,5,10.0,2.1,79%,0.003,解锁:厨具汤桶,per_sold,own_tag,8,1,0,,是,绿豆x1 + 白糖x1
+f_ice_jelly,冰粉,dessert,cold,,2,ice_maker,是,20,5,15.0,3.6,76%,0.003,解锁:第3天,per_sold,own_tag,4,1,0,,是,仙草x1 + 糖浆x1 + 冰块x1
+f_peach_gum,桃胶炖奶,dessert,,,2,soup_pot,是,30,5,21.0,5.5,74%,0.003,解锁:第5天,per_sold,own_tag,4,1,0,,是,桃胶x1 + 炼乳x1
+f_pudding,焦糖布丁,dessert,,,2,steamer,是,40,5,13.0,3.0,77%,0.003,解锁:厨具蒸笼,per_sold,own_tag,4,1,0,,是,布丁粉x1 + 鸡蛋x1
+f_plum_tangyuan,杨梅汤圆,dessert,soup,,2,pot,是,40,5,20.0,5.3,74%,0.003,解锁:第5天,per_sold,own_tag,4,1,0,,是,汤圆x1 + 乌梅x1 + 白糖x1
+f_brine_claw,卤鸡爪,braised,,,2,braise_pot,是,20,5,29.0,8.0,72%,0.0012,解锁:厨具卤锅,per_sold,own_tag,4,1,0,,是,鸡爪x1 + 卤料包x1
+f_brine_duck_neck,卤鸭脖,braised,spicy,,2,braise_pot,是,20,5,37.0,10.5,72%,0.0012,解锁:厨具卤锅,per_sold,own_tag,4,1,0,,是,鸭脖x1 + 卤料包x1 + 辣椒面x1
+f_brine_tofu,卤豆干,braised,cold,,2,braise_pot,是,20,5,15.5,3.8,75%,0.0012,解锁:厨具卤锅,per_sold,own_tag,8,1,0,,是,豆腐干x1 + 卤料包x1
+f_brine_egg,卤蛋,braised,,,1,braise_pot,是,20,5,13.0,3.0,77%,0.0012,解锁:厨具卤锅,per_sold,own_tag,8,1,0,,是,鸡蛋x1 + 卤料包x1
+f_brine_lotus,卤藕片,braised,cold,,2,braise_pot,是,20,5,17.5,4.5,74%,0.0012,解锁:厨具卤锅,per_sold,own_tag,8,1,0,,是,藕片x1 + 卤料包x1
+f_brine_tripe,卤牛肚,braised,,,3,braise_pot,是,25,5,41.5,12.0,71%,0.0012,解锁:厨具卤锅,per_sold,own_tag,4,1,0,,是,牛肚x1 + 卤料包x1
+f_brine_intestine,卤鸭肠,braised,spicy,,2,braise_pot,是,25,5,35.0,10.0,71%,0.0012,解锁:厨具卤锅,per_sold,own_tag,4,1,0,,是,鸭肠x1 + 卤料包x1 + 辣椒面x1
+f_brine_wing,卤鸡翅尖,braised,,,2,braise_pot,是,20,5,25.5,7.0,73%,0.0012,解锁:厨具卤锅,per_sold,own_tag,8,1,0,,是,鸡翅x1 + 卤料包x1
+f_fried_rice,蛋炒饭,staple,madedish,,3,pot,否,60,5,14.0,3.4,76%,0.0035,解锁:第3天,per_sold,own_tag,4,1,0,,是,大米x1 + 鸡蛋x1 + 洋葱x1
+f_beef_noodle,牛肉面,staple,madedish,,4,pot,否,100,5,49.5,14.5,71%,0.0035,解锁:第4天,per_sold,own_tag,4,1,0,,是,面条x1 + 牛肉x1 + 汤x1
+f_braised_pork_rice,卤肉饭,staple,braised,,4,rice_cooker,否,40,5,32.0,9.0,72%,0.0035,解锁:厨具电饭煲,per_sold,own_tag,4,1,0,,是,大米x1 + 五花肉x1 + 酱油x1

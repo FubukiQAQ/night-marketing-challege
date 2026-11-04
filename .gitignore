@@ -1,0 +1,8 @@
+﻿node_modules/
+_edge*/
+_f*/
+*.log
+_dom*.txt
+_shot*.png
+_meta.png
+_settle.png

@@ -1,0 +1,506 @@
+[
+  {
+    "id": "rice",
+    "category": "staple"
+  },
+  {
+    "id": "noodles",
+    "category": "staple"
+  },
+  {
+    "id": "vermicelli",
+    "category": "staple"
+  },
+  {
+    "id": "instant_noodles",
+    "category": "staple"
+  },
+  {
+    "id": "udon",
+    "category": "staple"
+  },
+  {
+    "id": "flour",
+    "category": "staple"
+  },
+  {
+    "id": "glutinous_rice",
+    "category": "staple"
+  },
+  {
+    "id": "bun_skin",
+    "category": "staple"
+  },
+  {
+    "id": "corn",
+    "category": "staple"
+  },
+  {
+    "id": "potato",
+    "category": "staple"
+  },
+  {
+    "id": "sweet_potato",
+    "category": "staple"
+  },
+  {
+    "id": "rice_cake",
+    "category": "staple"
+  },
+  {
+    "id": "scallion",
+    "category": "veg"
+  },
+  {
+    "id": "cilantro",
+    "category": "veg"
+  },
+  {
+    "id": "cabbage",
+    "category": "veg"
+  },
+  {
+    "id": "lettuce",
+    "category": "veg"
+  },
+  {
+    "id": "spinach",
+    "category": "veg"
+  },
+  {
+    "id": "cucumber",
+    "category": "veg"
+  },
+  {
+    "id": "tomato",
+    "category": "veg"
+  },
+  {
+    "id": "eggplant",
+    "category": "veg"
+  },
+  {
+    "id": "mushroom",
+    "category": "veg"
+  },
+  {
+    "id": "wood_ear",
+    "category": "veg"
+  },
+  {
+    "id": "seaweed",
+    "category": "veg"
+  },
+  {
+    "id": "bamboo_shoot",
+    "category": "veg"
+  },
+  {
+    "id": "radish",
+    "category": "veg"
+  },
+  {
+    "id": "carrot",
+    "category": "veg"
+  },
+  {
+    "id": "lotus_root",
+    "category": "veg"
+  },
+  {
+    "id": "pork",
+    "category": "meat"
+  },
+  {
+    "id": "beef",
+    "category": "meat"
+  },
+  {
+    "id": "lamb",
+    "category": "meat"
+  },
+  {
+    "id": "chicken",
+    "category": "meat"
+  },
+  {
+    "id": "chicken_wing",
+    "category": "meat"
+  },
+  {
+    "id": "chicken_feet",
+    "category": "meat"
+  },
+  {
+    "id": "pork_belly",
+    "category": "meat"
+  },
+  {
+    "id": "minced_pork",
+    "category": "meat"
+  },
+  {
+    "id": "sausage",
+    "category": "meat"
+  },
+  {
+    "id": "bacon",
+    "category": "meat"
+  },
+  {
+    "id": "egg",
+    "category": "meat"
+  },
+  {
+    "id": "quail_egg",
+    "category": "meat"
+  },
+  {
+    "id": "fish",
+    "category": "seafood"
+  },
+  {
+    "id": "squid",
+    "category": "seafood"
+  },
+  {
+    "id": "shrimp",
+    "category": "seafood"
+  },
+  {
+    "id": "oyster",
+    "category": "seafood"
+  },
+  {
+    "id": "clam",
+    "category": "seafood"
+  },
+  {
+    "id": "crab",
+    "category": "seafood"
+  },
+  {
+    "id": "scallop",
+    "category": "seafood"
+  },
+  {
+    "id": "fish_ball",
+    "category": "seafood"
+  },
+  {
+    "id": "cuttlefish",
+    "category": "seafood"
+  },
+  {
+    "id": "tofu",
+    "category": "tofu"
+  },
+  {
+    "id": "fried_tofu",
+    "category": "tofu"
+  },
+  {
+    "id": "tofu_skin",
+    "category": "tofu"
+  },
+  {
+    "id": "dried_tofu",
+    "category": "tofu"
+  },
+  {
+    "id": "stinky_tofu",
+    "category": "tofu"
+  },
+  {
+    "id": "tofu_pudding",
+    "category": "tofu"
+  },
+  {
+    "id": "gluten",
+    "category": "tofu"
+  },
+  {
+    "id": "bean_curd_stick",
+    "category": "tofu"
+  },
+  {
+    "id": "chili",
+    "category": "seasoning"
+  },
+  {
+    "id": "chili_oil",
+    "category": "seasoning"
+  },
+  {
+    "id": "pepper",
+    "category": "seasoning"
+  },
+  {
+    "id": "peppercorn",
+    "category": "seasoning"
+  },
+  {
+    "id": "soy_sauce",
+    "category": "seasoning"
+  },
+  {
+    "id": "vinegar",
+    "category": "seasoning"
+  },
+  {
+    "id": "salt",
+    "category": "seasoning"
+  },
+  {
+    "id": "sugar",
+    "category": "seasoning"
+  },
+  {
+    "id": "sesame_oil",
+    "category": "seasoning"
+  },
+  {
+    "id": "sesame",
+    "category": "seasoning"
+  },
+  {
+    "id": "garlic_sauce",
+    "category": "seasoning"
+  },
+  {
+    "id": "bean_paste",
+    "category": "seasoning"
+  },
+  {
+    "id": "curry",
+    "category": "seasoning"
+  },
+  {
+    "id": "five_spice",
+    "category": "seasoning"
+  },
+  {
+    "id": "stock",
+    "category": "seasoning"
+  },
+  {
+    "id": "oyster_sauce",
+    "category": "seasoning"
+  },
+  {
+    "id": "lemon",
+    "category": "fruit"
+  },
+  {
+    "id": "orange",
+    "category": "fruit"
+  },
+  {
+    "id": "watermelon",
+    "category": "fruit"
+  },
+  {
+    "id": "mango",
+    "category": "fruit"
+  },
+  {
+    "id": "strawberry",
+    "category": "fruit"
+  },
+  {
+    "id": "peach",
+    "category": "fruit"
+  },
+  {
+    "id": "grape",
+    "category": "fruit"
+  },
+  {
+    "id": "pineapple",
+    "category": "fruit"
+  },
+  {
+    "id": "coconut",
+    "category": "fruit"
+  },
+  {
+    "id": "passion_fruit",
+    "category": "fruit"
+  },
+  {
+    "id": "apple",
+    "category": "fruit"
+  },
+  {
+    "id": "pear",
+    "category": "fruit"
+  },
+  {
+    "id": "fish_tofu",
+    "category": "prepared"
+  },
+  {
+    "id": "meatball",
+    "category": "prepared"
+  },
+  {
+    "id": "crab_stick",
+    "category": "prepared"
+  },
+  {
+    "id": "ham",
+    "category": "prepared"
+  },
+  {
+    "id": "tempura",
+    "category": "prepared"
+  },
+  {
+    "id": "fried_dough",
+    "category": "prepared"
+  },
+  {
+    "id": "noodle_cake",
+    "category": "prepared"
+  },
+  {
+    "id": "soup_base",
+    "category": "prepared"
+  },
+  {
+    "id": "ice",
+    "category": "prepared"
+  },
+  {
+    "id": "jelly",
+    "category": "prepared"
+  },
+  {
+    "id": "taro_ball",
+    "category": "prepared"
+  },
+  {
+    "id": "red_bean",
+    "category": "prepared"
+  },
+  {
+    "id": "water",
+    "category": "base"
+  },
+  {
+    "id": "milk",
+    "category": "base"
+  },
+  {
+    "id": "soymilk",
+    "category": "base"
+  },
+  {
+    "id": "tea_black",
+    "category": "base"
+  },
+  {
+    "id": "tea_green",
+    "category": "base"
+  },
+  {
+    "id": "tea_oolong",
+    "category": "base"
+  },
+  {
+    "id": "coffee",
+    "category": "base"
+  },
+  {
+    "id": "coconut_milk",
+    "category": "base"
+  },
+  {
+    "id": "soda_water",
+    "category": "base"
+  },
+  {
+    "id": "broth",
+    "category": "base"
+  },
+  {
+    "id": "cream",
+    "category": "dessert"
+  },
+  {
+    "id": "chocolate",
+    "category": "dessert"
+  },
+  {
+    "id": "honey",
+    "category": "dessert"
+  },
+  {
+    "id": "syrup",
+    "category": "dessert"
+  },
+  {
+    "id": "pearl",
+    "category": "dessert"
+  },
+  {
+    "id": "sago",
+    "category": "dessert"
+  },
+  {
+    "id": "tremella",
+    "category": "dessert"
+  },
+  {
+    "id": "osmanthus",
+    "category": "dessert"
+  },
+  {
+    "id": "matcha",
+    "category": "dessert"
+  },
+  {
+    "id": "vanilla",
+    "category": "dessert"
+  },
+  {
+    "id": "mango_puree",
+    "category": "dessert"
+  },
+  {
+    "id": "waffle_mix",
+    "category": "dessert"
+  },
+  {
+    "id": "cola",
+    "category": "packaged"
+  },
+  {
+    "id": "lemon_soda",
+    "category": "packaged"
+  },
+  {
+    "id": "beer",
+    "category": "packaged"
+  },
+  {
+    "id": "mineral_water",
+    "category": "packaged"
+  },
+  {
+    "id": "energy_drink",
+    "category": "packaged"
+  },
+  {
+    "id": "yogurt",
+    "category": "packaged"
+  },
+  {
+    "id": "orange_soda",
+    "category": "packaged"
+  },
+  {
+    "id": "sparkling_water",
+    "category": "packaged"
+  }
+]
