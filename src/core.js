@@ -88,6 +88,32 @@ export function makeGame(DATA) {
     return s.day >= 3;
   };
 
+  // 这个食材被哪些「已解锁」的菜用到（备货时判断该不该买）
+  G.ingredientUsers = function (ingId, limit) {
+    return G.availableFoods()
+      .filter((f) => f.recipe.some((r) => r.ing === ingId))
+      .map((f) => f.name)
+      .slice(0, limit || 99);
+  };
+
+  // 一键买齐某道菜（按份数），买不到的部分返回缺口
+  G.buyForDish = function (foodId, servings) {
+    const f = FOOD[foodId];
+    const miss = [];
+    f.recipe.forEach((r) => {
+      let want = r.qty * servings - (G.s.inventory[r.ing] || 0);
+      while (want > 0) {
+        const off = G.offerFor(r.ing);
+        if (!off) { miss.push(ING[r.ing].name); break; }
+        const q = Math.min(want, off.stock);
+        const res = G.buy(off.si, off.ii, q);
+        if (!res.ok) { miss.push(ING[r.ing].name); break; }
+        want -= q;
+      }
+    });
+    return { ok: miss.length === 0, miss };
+  };
+
   G.availableFoods = function () {
     return DATA.foods.filter((f) => G.isUnlocked(f));
   };

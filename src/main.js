@@ -240,6 +240,13 @@ function onClick(ev) {
       if (!r.ok) toast(r.msg); else { hud(G); renderStock(G); }
       break;
     }
+    case 'buyDish': {
+      const res = G.buyForDish(t.dataset.f, +t.dataset.n || 5);
+      if (!res.ok) toast('没买齐：缺 ' + res.miss.join('、'));
+      else toast(`已按 ${t.dataset.n || 5} 份备齐 ${G.FOOD[t.dataset.f].name} 的料`);
+      hud(G); renderStock(G);
+      break;
+    }
     case 'toPrep': {
       G.finishStock();
       route();

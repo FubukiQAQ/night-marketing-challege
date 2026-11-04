@@ -98,20 +98,20 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 14px;
 }
 
 #app {
   position: relative;
-  width: min(1180px, 94vw);
-  height: min(830px, 92vh);
+  width: min(1760px, calc(100vw - 28px));
+  height: calc(100vh - 28px);
   display: flex;
   flex-direction: column;
   background: rgba(12, 12, 13, 0.72);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 40px 120px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
   animation: frameBreath 9s ease-in-out infinite;
@@ -273,10 +273,10 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
 }
 .cols { display: flex; gap: 20px; align-items: flex-start; }
 .col-main { flex: 1 1 auto; min-width: 0; }
-.col-side { flex: 0 0 360px; }
+.col-side { flex: 0 0 clamp(340px, 26vw, 460px); }
 
 /* 供应商 */
-.sup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.sup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
 .sup {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--line);
@@ -300,11 +300,12 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
 }
 .item:first-of-type { border-top: 0; }
 .item-name { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item > span:nth-child(2) { min-width: 0; }
 .item-price { color: var(--accent); font-variant-numeric: tabular-nums; }
 .item-stock { color: var(--dim); min-width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* 餐品卡 */
-.food-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 12px; }
+.food-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 12px; }
 .food {
   display: grid;
   grid-template-columns: 36px 1fr auto;
@@ -345,11 +346,13 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
 .reso.on { color: var(--accent); }
 
 /* 出摊 */
-#sellwrap { display: flex; flex-direction: column; gap: 16px; align-items: center; height: 100%; justify-content: center; }
+#sellwrap { display: flex; flex-direction: column; gap: 14px; align-items: center; height: 100%; min-height: 0; }
+#sellwrap canvas { flex: 1 1 auto; min-height: 0; }
 #sellcanvas {
-  width: min(100%, 1000px);
-  max-height: calc(100% - 40px);
-  aspect-ratio: 16 / 9;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
   image-rendering: pixelated;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -439,7 +442,25 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
   button::after { display: none; }
 }
 
-@media (max-width: 900px) {
+/* 菜谱速查 */
+.dish-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: var(--fs-tiny);
+}
+.dish-row:first-child { border-top: 0; }
+.dish-name { color: var(--text); }
+.dish-tags { color: var(--dim); }
+.dish-recipe { color: var(--muted); margin-top: 3px; line-height: 1.7; }
+.dish-recipe .lack { color: var(--warn); }
+.used-by { color: var(--dim); font-size: 11px; margin-top: 2px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+@media (max-width: 1100px) {
   :root { --fs: 20px; --fs-lg: 28px; --fs-xl: 36px; }
   .col-side { flex: 0 0 300px; }
+  .food-list { grid-template-columns: 1fr; }
 }
