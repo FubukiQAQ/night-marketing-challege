@@ -13,7 +13,11 @@ export function toast(msg) {
   setTimeout(() => d.remove(), 1800);
 }
 
-const money = (n) => (n < 10 ? `¥${n.toFixed(1)}` : `¥${Math.round(n).toLocaleString('zh-CN')}`);
+const money = (n) => {
+  const v = Math.abs(n);
+  const body = v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString('zh-CN');
+  return (n < 0 ? '-¥' : '¥') + body;
+};
 const pct = (n) => `${Math.round(n * 100)}%`;
 
 export function hud(G) {
@@ -38,7 +42,7 @@ export function hud(G) {
     <span class="hud-phase">${phaseName}</span>
     ${bar}
     <span class="hud-spacer"></span>
-    <span class="muted tiny">口碑 ${Math.round(s.rep)} · 昨日 ${Math.round(s.lastScore)} 分 · 第 ${s.run} 轮</span>
+    <span class="hud-meta">口碑 ${Math.round(s.rep)} · 昨日 ${Math.round(s.lastScore)} 分 · 第 ${s.run} 轮</span>
   `;
 }
 
@@ -93,6 +97,10 @@ export function renderStock(G) {
         <div class="scroll" style="max-height:240px">${invRows}</div>
       </div>
       <div class="panel mt8">
+        <h3 class="panel-title">${icon('ico/state_stockout.png', 14)} 今日菜单要用的料</h3>
+        ${menuNeedRows(G)}
+      </div>
+      <div class="panel mt8">
         <h3 class="panel-title">${icon('ico/state_warning.png', 14)} 复盘</h3>
         <div class="hint">
           ${s.history.length ? s.history.slice(-1).map((h) =>
@@ -123,16 +131,23 @@ export function renderPrep(G) {
     const hasUt = !f.utensil || s.utensils.includes(f.utensil);
     const raw = G.rawCapacity(f);
     const pre = s.premade[f.id] ? s.premade[f.id].n : 0;
+    const recipeLine = f.recipe.map((r) => {
+      const ing = G.ING[r.ing];
+      const have = s.inventory[r.ing] || 0;
+      const enough = have >= r.qty;
+      return `<span class="${enough ? '' : 'lack'}">${ing.name}×${r.qty}</span>`;
+    }).join(' · ');
     const tags = f.tags.map((t) => {
       const tg = G.TAG[t];
       const tr = G.DATA.traits.traits.find((x) => x.tag === t);
       return `<span class="tiny" style="color:${tagColor(t)}">${tg ? tg.name : t}${tr && act[tr.id] ? '✓' : ''}</span>`;
     }).join(' ');
     return `<div class="food ${on ? 'on' : ''}">
-      <span>${icon(f.sprite, 24)}</span>
+      <span>${icon(f.sprite, 32)}</span>
       <span>
         <span class="food-name">${f.name} ${tags}${hasUt ? '' : '<span class="warn tiny">缺厨具</span>'}</span>
-        <span class="food-sub">空间${f.space} · 现做${(f.serveTicks / 200).toFixed(2)}s · 备好${pre}份 · 食材够${raw}份</span>
+        <span class="food-sub">空间 ${f.space} 格 · 现做 ${(f.serveTicks / 200).toFixed(2)}s · 备好 ${pre} 份 · 食材够 ${raw} 份</span>
+        <div class="recipe">配方 ${recipeLine} <span class="muted">· 一份约 ${G.prepMinutesFor(f).toFixed(1)} 分钟</span></div>
       </span>
       <span style="display:flex;gap:4px;align-items:center">
         ${on ? `<input type="number" step="0.5" min="1" value="${m.price}" data-act="price" data-f="${f.id}">` : ''}
@@ -151,7 +166,7 @@ export function renderPrep(G) {
     const need = Math.max(0, tr.needMenu - cnt);
     const near = !on && need <= 1;
     const dots = Array.from({ length: Math.min(tr.needMenu, 6) }, (_, i) =>
-      `<span class="dot ${i < Math.min(cnt, tr.needMenu) ? 'on' : ''}"></span>`).join('');
+      `<span class="dot-sq ${i < Math.min(cnt, tr.needMenu) ? 'on' : ''}"></span>`).join('');
     return `<div class="trait ${on ? 'on' : ''} ${near ? 'near' : ''}">
       <span>${icon('ico/' + tr.icon + '.png', 20)}</span>
       <span>
@@ -212,6 +227,30 @@ export function renderPrep(G) {
     <button class="primary" data-act="toSell">出摊 →</button>`;
 }
 
+
+function menuNeedRows(G) {
+  const s = G.s;
+  const on = s.menu.filter((m) => m.onMenu);
+  if (!on.length) return '<div class="hint">还没定菜单。先去「备餐」上架几道菜，这里就会列出该买的食材。</div>';
+  const need = {};
+  on.forEach((m) => G.FOOD[m.foodId].recipe.forEach((r) => {
+    need[r.ing] = (need[r.ing] || 0) + r.qty;
+  }));
+  return Object.entries(need)
+    .sort((a, b) => (s.inventory[a[0]] || 0) - (s.inventory[b[0]] || 0))
+    .map(([id, q]) => {
+      const ing = G.ING[id];
+      const have = s.inventory[id] || 0;
+      const short = have < q;
+      return `<div class="item" style="grid-template-columns:24px 1fr auto auto">
+        <span>${icon(ing.sprite, 16)}</span>
+        <span class="item-name ${short ? 'warn' : ''}">${ing.name}</span>
+        <span class="item-stock">每份需 ${q}</span>
+        <span class="item-stock ${short ? 'warn' : 'ok'}">库存 ${have}</span>
+      </div>`;
+    }).join('') + '<div class="hint mt8">想多卖几份就按「每份需 × 预计份数」进货。</div>';
+}
+
 function tagColor(tagId) {
   const map = {
     fast: '#f2b33d', staple: '#e8d9a8', spicy: '#e0432b', fried: '#c98b3f',
@@ -270,11 +309,11 @@ export function renderSettle(G) {
     <div class="panel">
       <h3 class="panel-title">${icon('ico/state_bill.png', 16)} 第 ${st.day} 天 · 打烊结算</h3>
       <div class="settle-grid">
-        <div class="kpi"><div class="k">营业额</div><div class="v">${money(st.revenue)}</div>
+        <div class="kpi"><div class="k">营业额</div><div class="v acc">${money(st.revenue)}</div>
           <div class="tiny muted">目标 ${money(st.target)}</div></div>
         <div class="kpi"><div class="k">卖出 / 流失</div><div class="v">${st.served} / ${st.lost}</div></div>
         <div class="kpi"><div class="k">满意度</div><div class="v">${st.sat.toFixed(2)}</div></div>
-        <div class="kpi"><div class="k">评分</div><div class="v" style="color:${st.score > 60 ? '#6ee7a8' : st.score > 40 ? '#ffc163' : '#ff5c7a'}">${st.score.toFixed(0)}</div>
+        <div class="kpi"><div class="k">评分</div><div class="v acc">${st.score.toFixed(0)}</div>
           <div class="tiny muted">${st.score > 70 ? '好评如潮' : st.score > 55 ? '生意不错' : st.score > 40 ? '平平淡淡' : '有点冷清'}</div></div>
       </div>
       <div class="hint mt8">获得经验 ${st.exp} · 口碑 ${Math.round(G.s.rep)}</div>

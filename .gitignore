@@ -1,8 +1,14 @@
 ﻿node_modules/
 _edge*/
+_e[0-9]*/
+_e_*/
 _f*/
+_g[0-9]*/
+_final*/
 *.log
 _dom*.txt
+_d.txt
 _shot*.png
+_v2*.png
 _meta.png
 _settle.png
