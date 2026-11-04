@@ -47,28 +47,51 @@ export function hud(G) {
 }
 
 /* ---------------------------------------------------------------- 备货 */
+function recipeText(G, f, opts) {
+  const s = G.s;
+  const showStock = !opts || opts.stock !== false;
+  return f.recipe.map((r) => {
+    const ing = G.ING[r.ing];
+    const have = s.inventory[r.ing] || 0;
+    const enough = have >= r.qty;
+    const tail = showStock ? ` <span class="${enough ? 'muted' : 'lack'}">(${have})</span>` : '';
+    return `<span class="${enough ? '' : 'lack'}">${ing.name}×${r.qty}</span>${tail}`;
+  }).join(' · ');
+}
+
 export function renderStock(G) {
   const s = G.s;
   const st = el('stage');
   const used = G.storageUsed();
+
+  // 库存
   const invRows = Object.entries(s.inventory)
     .filter(([, q]) => q > 0)
     .sort((a, b) => b[1] - a[1])
     .map(([id, q]) => {
       const ing = G.ING[id];
-      return `<div class="item"><span>${icon(ing.sprite, 16)}</span>
+      return `<div class="item" style="grid-template-columns:24px 1fr auto auto">
+        <span>${icon(ing.sprite, 16)}</span>
         <span class="item-name">${ing.name}</span>
-        <span class="item-price">${ing.catName}</span>
+        <span class="item-stock">${ing.catName}</span>
         <span class="item-stock">×${q}</span></div>`;
-    }).join('') || '<div class="hint">还没有进货。左边挑几家买点食材。</div>';
+    }).join('') || '<div class="hint">还没有进货。</div>';
 
+  // 供应商（每行标出这料能做哪些菜）
   const sups = s.suppliers.map((sup, si) => {
     const items = sup.items.map((it, ii) => {
       const ing = G.ING[it.ingId];
       const out = it.stock <= 0;
+      const users = G.ingredientUsers(it.ingId, 3);
+      const usedBy = users.length
+        ? `<div class="used-by">用于 ${users.join('、')}${G.ingredientUsers(it.ingId).length > 3 ? ' 等' : ''}</div>`
+        : '<div class="used-by">暂时没有用到它的菜</div>';
       return `<div class="item">
         <span>${icon(ing.sprite, 16)}</span>
-        <span class="item-name">${ing.name}</span>
+        <span>
+          <div class="item-name">${ing.name}</div>
+          ${usedBy}
+        </span>
         <span class="item-price">${money(it.price)}</span>
         <span class="item-stock">${out ? '售罄' : '×' + it.stock}</span>
         <span style="display:flex; gap:3px">
@@ -79,41 +102,48 @@ export function renderStock(G) {
       </div>`;
     }).join('');
     return `<div class="sup ${sup.closed ? 'closed' : ''}">
-      <div class="sup-head">${icon(sup.closed ? 'ui/ui_supply_closed.png' : 'ui/ui_supplier.png', 16)}
+      <div class="sup-head">${icon(sup.closed ? 'ui/ui_supply_closed.png' : 'ui/ui_supply_open.png', 16)}
         ${sup.name}<span class="sup-mark">加价 ${(sup.markup * 100).toFixed(0)}%</span></div>
       ${sup.closed ? '<div class="hint">今天没开门</div>' : items}
     </div>`;
   }).join('');
 
+  // 菜谱速查：所有已解锁的菜 + 配方 + 一键买齐
+  const dishes = G.availableFoods().map((f) => {
+    const tags = f.tags.map((t) => `<span class="dish-tags">${G.TAG[t] ? G.TAG[t].name : t}</span>`).join(' ');
+    const canMake = f.recipe.every((r) => (s.inventory[r.ing] || 0) >= r.qty || !!G.offerFor(r.ing));
+    return `<div class="dish-row">
+      <span>${icon(f.sprite, 24)}</span>
+      <span>
+        <div class="dish-name">${f.name} ${tags} <span class="muted">· ${money(f.price)}</span></div>
+        <div class="dish-recipe">${recipeText(G, f)}</div>
+      </span>
+      <button class="small" data-act="buyDish" data-f="${f.id}" data-n="5"
+        ${canMake ? '' : 'disabled'}>买齐×5</button>
+    </div>`;
+  }).join('');
+
   st.innerHTML = `<div class="cols">
     <div class="col-main">
-      <div class="panel"><h3 class="panel-title">${icon('ui/ui_supply_open.png', 14)} 今天的供应商</h3>
+      <div class="panel"><h3 class="panel-title">今天的供应商</h3>
         <div class="sup-grid">${sups}</div>
       </div>
     </div>
     <div class="col-side">
       <div class="panel">
-        <h3 class="panel-title">${icon('ico/state_storage.png', 14)} 库存 ${used.toFixed(1)} / ${G.B.storage} 格</h3>
-        <div class="scroll" style="max-height:240px">${invRows}</div>
+        <h3 class="panel-title">菜谱速查 · 买料之前先看这里</h3>
+        <div class="scroll" style="max-height:min(46vh, 430px)">${dishes}</div>
+        <div class="hint mt8">括号里是你手上的库存；「买齐×5」会从这个市场的供应商那里按 5 份的量补齐。</div>
       </div>
       <div class="panel mt8">
-        <h3 class="panel-title">${icon('ico/state_stockout.png', 14)} 今日菜单要用的料</h3>
-        ${menuNeedRows(G)}
-      </div>
-      <div class="panel mt8">
-        <h3 class="panel-title">${icon('ico/state_warning.png', 14)} 复盘</h3>
-        <div class="hint">
-          ${s.history.length ? s.history.slice(-1).map((h) =>
-            `昨日营收 ${money(h.revenue)} · 评分 ${h.score.toFixed(0)}<br>卖出 ${h.served} 份，流失 ${h.lost} 桌`).join('')
-            : '第一天，还没有历史数据。'}
-          <br><br>提示：进货只看今天用得到的量，剩下的会占储存格。
-        </div>
+        <h3 class="panel-title">库存 ${used.toFixed(1)} / ${G.B.storage} 格</h3>
+        <div class="scroll" style="max-height:180px">${invRows}</div>
       </div>
     </div>
   </div>`;
 
   el('bar').innerHTML = `
-    <span class="muted tiny">采购会消耗分钟：剩余 ${Math.round(s.minutesLeft)} 分钟</span>
+    <span>采购会消耗分钟：剩余 ${Math.round(s.minutesLeft)} 分钟</span>
     <span class="spacer"></span>
     <button class="primary" data-act="toPrep">去备餐 →</button>`;
 }
