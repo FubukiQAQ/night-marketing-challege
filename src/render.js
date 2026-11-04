@@ -1,40 +1,48 @@
-// render.js — 出摊场景的 Canvas 绘制（640×360 逻辑分辨率）
-import { draw, sceneDraw, frame, customerTypes, ASSETS } from './sprites.js';
+// render.js — 出摊场景（HD 素材，逻辑分辨率 960×540）
+import { draw, sceneDraw, customerTypes, ASSETS } from './sprites.js';
 
-export function drawSrc(ctx, name, sx, sy, sw, sh, dx, dy, dw, dh, alpha = 1) {
-  const f = ASSETS.frames[name];
-  if (!f) return false;
-  const im = ASSETS.imgs[f.png];
-  if (!im) return false;
-  const old = ctx.globalAlpha;
-  if (alpha !== 1) ctx.globalAlpha = alpha;
-  ctx.drawImage(im, f.x + sx, f.y + sy, sw, sh, Math.round(dx), Math.round(dy),
-    dw || sw, dh || sh);
-  ctx.globalAlpha = old;
-  return true;
+const W = 960, H = 540;
+
+/** 版面常量：HD 场景图层里摊位/台面/地面的大致位置。
+ *  这些数是按 scene_night_near.png 的亮度分布估的，肉眼校对后改这里即可。 */
+export const LAYOUT = {
+  // 以下数值由 tools/analyze_layout.py 从 scene_night_*.png 合成图实测得出：
+  //   y=313 是台面最强水平边缘，暖光中心 x≈450，地面边缘 y≈465
+  counterY: 313,      // 台面基线（厨具底边）
+  utensil: 72,        // 厨具绘制尺寸（源图 64，放大到 72 更醒目）
+  utensilX0: 258,     // 第一件厨具 x（5 件居中于 x=450）
+  utensilStep: 78,    // 厨具间距
+  bulletY: 150,       // 灯串 y
+  bulletX0: 258,
+  bulletStep: 26,
+  groundY: 465,       // 顾客脚底线
+  customerW: 48,
+  customerH: 64,
+  queueX0: 648,       // 队列起始 x（右侧暖光边缘内）
+  queueStep: 68,
+  maxQueue: 4,
+};
+
+
+/** 程序化径向光晕（HD 素材包里没有 fx/ 图层） */
+function glow(ctx, cx, cy, r, rgb, alpha) {
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  g.addColorStop(0, 'rgba(' + rgb + ',' + (alpha).toFixed(3) + ')');
+  g.addColorStop(0.45, 'rgba(' + rgb + ',' + (alpha * 0.45).toFixed(3) + ')');
+  g.addColorStop(1, 'rgba(' + rgb + ',0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
 }
-
-
-const W = 640, H = 360;
-const BOOTH_X = 188;          // 摊位左边缘
-const AWNING_Y = 46;          // 雨棚顶
-const SIGN_Y = 100;
-const BULB_Y = 94;
-const SURF_Y = 194;           // 台面格（48 高）
-const UT_Y = 146;             // 厨具（48 高，坐在台面上）
-const BASE_Y = 234;           // 车体（裁短后 66 高）
-const GROUND = 300;          // 地面线
-const QUEUE_X = 402;
-const QUEUE_STEP = 54;
-const PERSON = 2;             // 人物放大倍数（整数倍，像素不糊）
 
 let TYPES = null;
 let t = 0;
 
 export function resetScene() { t = 0; }
 
-function animFrame(base, n, fps) {
-  return `${base}_${String((Math.floor(t * fps) % n) + 1).padStart(2, '0')}`;
+function sceneKey(name) {
+  return 'scene/scene_' + name + '.png';
 }
 
 export function renderSell(ctx, G, dt) {
@@ -44,99 +52,81 @@ export function renderSell(ctx, G, dt) {
   const S = s.sell;
 
   ctx.clearRect(0, 0, W, H);
-  // ---------- 背景三层
-  ctx.fillStyle = '#0a0e14';
-  ctx.fillRect(0, 0, W, H);
-  sceneDraw(ctx, 'night_far_dark', 0, -6, W, H * 0.62);
-  sceneDraw(ctx, 'night_mid_dark', 0, 60, W, H * 0.62);
-  // 地面
-  ctx.fillStyle = '#0a0e14';
-  ctx.fillRect(0, GROUND, W, H - GROUND);
 
-  const totalLayers = Object.values(s.layers || {}).reduce((a, b) => a + b, 0);
-  const litBulbs = Math.min(18, Math.floor(totalLayers / 3));
+  // ---------- 场景分层：远 / 中 / 地面 / 近 / 灯
+  sceneDraw(ctx, 'scene_night_far', 0, 0, W, H)
+    || (ctx.fillStyle = '#0a0e14', ctx.fillRect(0, 0, W, H));
+  sceneDraw(ctx, 'scene_night_mid', 0, 0, W, H);
+  sceneDraw(ctx, 'scene_night_ground', 0, 0, W, H);
+  sceneDraw(ctx, 'scene_night_near', 0, 0, W, H);
 
-  // ---------- 摊位
-  drawSrc(ctx, 'scene/booth_base.png', 0, 30, 192, 66, BOOTH_X, BASE_Y, 192, 66);
-  // 台面格：按加成扩容的数量画
-  const surfModules = Math.max(3, Math.min(6, Math.round(G.B.surface / 6)));
-  for (let i = 0; i < surfModules; i++) {
-    draw(ctx, 'scene/booth_surface_1x.png', BOOTH_X + 12 + i * 44, SURF_Y, 48, 48);
-  }
-  draw(ctx, 'scene/booth_awning_up.png', BOOTH_X, AWNING_Y);
-  draw(ctx, 'scene/booth_sign.png', BOOTH_X + 48, SIGN_Y);
-  // 菜单板 + 收款牌 + 凳子
-  draw(ctx, 'scene/booth_menu_board.png', BOOTH_X + 150, SIGN_Y - 4);
-  draw(ctx, 'scene/booth_qr_sign.png', BOOTH_X + 34, SURF_Y - 16);
-  draw(ctx, 'scene/booth_stool_red.png', BOOTH_X - 62, GROUND - 48, 32, 48);
-  draw(ctx, 'scene/booth_stool_blue.png', BOOTH_X - 28, GROUND - 44, 32, 48);
-
-  // ---------- 灯串 = 层数（永久累积的视觉化）
-  for (let i = 0; i < 12; i++) {
-    const bx = BOOTH_X + 8 + i * 16;
-    const on = i < Math.ceil(litBulbs / 1.6);
-    draw(ctx, on ? 'ui/ui_bulb_on.png' : 'ui/ui_bulb_off.png', bx, BULB_Y, 8, 8);
-  }
-
-  // ---------- 厨具（最多 4 件，横排在台面上）
-  const us = s.utensils.slice(0, 4);
-  us.forEach((uid, i) => {
-    const x = BOOTH_X + 8 + i * 44;
-    const busy = S && Object.keys(S.jobs).includes(uid) && S.jobs[uid].length > 0;
-    const name = busy
-      ? `utensil/utensil_${uid}_work_0${(Math.floor(t * 8) % 2) + 1}.png`
-      : `utensil/utensil_${uid}_idle.png`;
-    // 光晕
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    draw(ctx, 'fx/light_warm.png', x - 16, UT_Y - 16, 80, 80, busy ? 0.55 : 0.22);
-    ctx.restore();
-    draw(ctx, name, x, UT_Y, 48, 48);
+  // ---------- 厨具
+  const uids = s.utensils.slice(0, 5);
+  uids.forEach((uid, i) => {
+    const busy = S && S.jobs[uid] && S.jobs[uid].length > 0;
+    const x = LAYOUT.utensilX0 + i * LAYOUT.utensilStep;
+    const size = LAYOUT.utensil;
+    const y = LAYOUT.counterY - size + 8;
+    // 忙碌时热光
+    if (busy) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      glow(ctx, x + size / 2, y + size * 0.55, size * 0.95, '255,175,90', 0.28);
+      ctx.restore();
+    }
+    const spr = 'utensil/utensil_' + uid + '.png';
+    draw(ctx, spr, x, y, size, size);
+    if (busy) {
+      const pulse = 0.55 + 0.45 * Math.sin(t * 6 + i);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      glow(ctx, x + size / 2, y + size * 0.5, size * 0.6, '255,220,150', 0.10 + pulse * 0.10);
+      ctx.restore();
+    }
   });
 
   // ---------- 顾客队列
   if (S) {
-    const list = S.customers.filter((c) => c.state !== 'wait' || true).slice(0, 5);
+    const list = S.customers.slice(0, LAYOUT.maxQueue);
     list.forEach((c, i) => {
       const type = TYPES && TYPES.length ? TYPES[(c.typeSeed || i) % TYPES.length] : 'student';
-      const x = QUEUE_X + i * QUEUE_STEP;
-      const y = GROUND - 40 * PERSON;
-      let spr = `char/chr_customer_${type}_wait.png`;
-      if (c.state === 'happy') {
-        spr = `char/chr_customer_${type}_happy.png`;
-      } else if (c.state === 'browse') {
-        spr = i % 2 ? `char/chr_customer_${type}_walk_01.png` : `char/chr_customer_${type}_walk_02.png`;
-      } else if (c.state === 'wait') {
-        const ratio = c.waited / Math.max(1, c.patience);
-        spr = ratio > 0.6 ? `char/chr_customer_${type}_urgent.png` : `char/chr_customer_${type}_wait.png`;
-      }
-      draw(ctx, spr, x, y, 24 * PERSON, 40 * PERSON);
+      const x = LAYOUT.queueX0 + i * LAYOUT.queueStep;
+      const y = LAYOUT.groundY - LAYOUT.customerH;
+      let state = 'wait';
+      if (c.state === 'happy') state = 'happy';
+      else if (c.state === 'browse') state = 'walk';
+      else if (c.state === 'wait' && c.waited / Math.max(1, c.patience) > 0.6) state = 'urgent';
+      draw(ctx, 'char/chr_customer_' + type + '_' + state + '.png',
+        x, y, LAYOUT.customerW, LAYOUT.customerH);
+
       // 需求气泡
       let mood = 'normal';
-      if (c.state === 'happy') mood = 'happy';
-      else if (c.state === 'wait' && c.waited / Math.max(1, c.patience) > 0.6) mood = 'urgent';
-      draw(ctx, `ico/want_${c.wantTag}_${mood}.png`, x + 16, y - 22, 16, 16);
+      if (state === 'happy') mood = 'happy';
+      else if (state === 'urgent') mood = 'urgent';
+      const bub = 'ico/tag_' + c.wantTag + '_' + (mood === 'happy' ? 'highlight' : mood === 'urgent' ? 'fragile' : 'normal') + '.png';
+      draw(ctx, bub, x + 8, y - 34, 32, 32);
+
       // 耐心条
       if (c.state === 'wait') {
         const ratio = 1 - c.waited / Math.max(1, c.patience);
-        ctx.fillStyle = '#0a0e14';
-        ctx.fillRect(x + 4, y - 8, 40, 4);
+        ctx.fillStyle = 'rgba(10,14,20,0.85)';
+        ctx.fillRect(x + 6, y - 12, 36, 5);
         ctx.fillStyle = ratio > 0.4 ? '#ffc163' : '#ff5c7a';
-        ctx.fillRect(x + 4, y - 8, Math.max(0, 40 * ratio), 4);
+        ctx.fillRect(x + 6, y - 12, Math.max(0, 36 * ratio), 5);
       }
     });
   }
 
   // ---------- 飘字
   if (S) {
-    ctx.font = 'bold 10px monospace';
+    ctx.font = 'bold 16px monospace';
     ctx.textAlign = 'center';
     S.floaters = S.floaters.filter((f) => f.age < 1.6);
     S.floaters.forEach((f, i) => {
       f.age += dt;
       const p = f.age / 1.6;
-      const y = 210 - p * 40 - (i % 3) * 6;
-      const x = 300 + ((i * 37) % 120) - 40;
+      const x = 420 + ((i * 47) % 180) - 60;
+      const y = 300 - p * 58 - (i % 3) * 8;
       ctx.globalAlpha = Math.max(0, 1 - p);
       if (f.kind === 'money') ctx.fillStyle = '#ffc93c';
       else if (f.kind === 'layer') ctx.fillStyle = '#ffc163';
@@ -148,6 +138,18 @@ export function renderSell(ctx, G, dt) {
     });
   }
 
+  // ---------- 灯光层（加法叠加，压在所有东西上面）
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  sceneDraw(ctx, 'scene_night_light', 0, 0, W, H);
+  // 层数越高，整条街越亮
+  const layersTotal = Object.values(s.layers || {}).reduce((a, b) => a + b, 0);
+  const boost = Math.min(0.42, layersTotal / 420);
+  if (boost > 0.01) {
+    ctx.fillStyle = 'rgba(255, 205, 120, ' + (boost * 0.18).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+  ctx.restore();
 }
 
 export const SCENE = { W, H };

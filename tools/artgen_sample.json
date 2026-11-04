@@ -1,0 +1,69 @@
+{
+  "batch": "style-sample",
+  "note": "文档 12-美术需求文档-高精度版 §8.2 第 1 批「风格样板」：4 食材 + 8 样板餐品 + 2 厨具 + 1 顾客（标签/UI 见 build_ico_ui_hd.py，场景见 artgen_scene.json）",
+  "items": [
+    {
+      "id": "ing_chili", "cat": "ing", "size": [32, 32], "seed": 2101,
+      "subject": "a single dried red chili pepper, glossy wrinkled skin, short green stem, one cut end showing pale seeds"
+    },
+    {
+      "id": "ing_beef", "cat": "ing", "size": [32, 32], "seed": 2102,
+      "subject": "a single chunk of raw beef, deep red lean meat with white fat marbling, fresh cut face with a wet sheen"
+    },
+    {
+      "id": "ing_tofu", "cat": "ing", "size": [32, 32], "seed": 2103,
+      "subject": "a single block of firm white tofu, visible porous cut face with tiny holes, soft warm white top light and cool shadow side"
+    },
+    {
+      "id": "ing_scallion", "cat": "ing", "size": [32, 32], "seed": 2104,
+      "subject": "a small bundle of chopped scallion, bright green hollow tubes with white root ends, fresh water droplets"
+    },
+
+    {
+      "id": "food_sour_spicy_noodle", "cat": "food", "size": [64, 64], "seed": 2201,
+      "subject": "a bowl of Chongqing hot and sour glass noodles, translucent reddish sweet potato noodles, red chili oil sheen, crushed peanuts, pickled greens, wooden chopsticks resting on a thick ceramic bowl, hot steam"
+    },
+    {
+      "id": "food_fried_rice", "cat": "food", "size": [48, 48], "seed": 2202,
+      "subject": "a plate of egg fried rice, golden separated rice grains, yellow egg strips, green scallion bits, white ceramic plate with blue rim"
+    },
+    {
+      "id": "food_fried_leg", "cat": "food", "size": [48, 48], "seed": 2203,
+      "subject": "a single crispy fried chicken drumstick, craggy golden brown crust with visible flakes, one bite showing white meat, paper wrap at the bone end"
+    },
+    {
+      "id": "food_lamb_skewer", "cat": "food", "size": [48, 48], "seed": 2204,
+      "subject": "three grilled lamb skewers fanned together on bamboo sticks, cumin and chili flakes, charred fatty edges with oil shine"
+    },
+    {
+      "id": "food_brine_tofu", "cat": "food", "size": [48, 48], "seed": 2205,
+      "subject": "braised dried tofu squares in a small dish, dark soy braised glossy surface, cut face showing dense fine layers, a few star anise"
+    },
+    {
+      "id": "food_cucumber", "cat": "food", "size": [48, 48], "seed": 2206,
+      "subject": "smashed cucumber salad in a shallow white dish, cracked bright green cucumber chunks, garlic bits, red chili oil, white sesame"
+    },
+    {
+      "id": "food_soy_milk", "cat": "food", "size": [48, 48], "seed": 2207,
+      "subject": "a paper cup of hot soy milk with a lid and straw, warm ivory liquid visible at the open edge, faint steam curls"
+    },
+    {
+      "id": "food_ice_jelly", "cat": "food", "size": [64, 64], "seed": 2208,
+      "subject": "a bowl of iced jelly dessert, translucent pale ice jelly cubes, dark brown sugar syrup, crushed peanuts, raisins and sesame on top"
+    },
+
+    {
+      "id": "utensil_pot", "cat": "utensil", "size": [64, 64], "seed": 2301,
+      "subject": "a wok on a burner, dark seasoned iron body with thick rim, glossy soup surface inside, a ladle resting on the edge, small flame under it"
+    },
+    {
+      "id": "utensil_fryer", "cat": "utensil", "size": [64, 64], "seed": 2302,
+      "subject": "a countertop electric deep fryer, brushed steel body, oil surface with bubbles, wire basket loaded with fries, small temperature dial"
+    },
+
+    {
+      "id": "chr_customer_student_wait", "cat": "char", "size": [48, 64], "seed": 2401,
+      "subject": "a chibi student customer standing and waiting, navy school uniform with white collar, backpack on both shoulders, calm neutral face, full body front view, hands at sides"
+    }
+  ]
+}

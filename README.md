@@ -72,11 +72,12 @@ python -m http.server 8777
 
 ## 技术
 
-- **渲染**：出摊场景 = Canvas 2D 640×360，整数倍放大 + `image-rendering: pixelated`；管理与结算界面 = DOM。
+- **渲染**：出摊场景 = Canvas 2D **960×540**（HD 素材原生分辨率），整数倍放大 + `image-rendering: pixelated`；管理与结算界面 = DOM。
 - **模拟**：`src/core.js` 是**纯逻辑、零 DOM 依赖**的固定步长模拟（200 tick/s × 60 s = 12000 tick），所以能在 Node 里无头跑。
 - **数据**：`配表/不烧心夜市-配表.xlsx`（13 个 sheet）是唯一真源，`tools/build_tables.py` 生成表 + 校验报告，`tools/export_game_data.py` 导出 `src/data/*.json`。
-- **美术**：像素美术打包成图集（`tools/pack_atlas.py`，顺带把素材的纯黑背景抠成透明）。
+- **美术**：`assets/art_hd/` 源图 → `tools/pack_atlas_hd.py` 打包成 6 张图集（426 帧），场景大图保持独立文件。
 - **字体**：缝合像素字体 Fusion Pixel 12px（OFL，见下）。
+- **音频**：`src/audio.js` 双 audio 元素交叉淡入，首次交互后解锁自动播放。
 
 ```
 index.html / styles.css     入口与设计系统
@@ -97,6 +98,8 @@ tools/                      数据流水线 + 无头验证脚本
 
 ```bash
 node tools/headless_run.mjs     # 无头模拟一个玩家跑完 7 天，打印每天营收/评分/层数
+node tools/check_assets.mjs     # 校验所有贴图引用都能在图集里解析
+python tools/check_text.py      # 扫一遍文本文件有没有编码乱码
 ```
 
 浏览器里还有几个调试入口（写进 `document.title`，方便自动化）：
@@ -118,6 +121,7 @@ node tools/headless_run.mjs     # 无头模拟一个玩家跑完 7 天，打印�
 | `v0.3` | 画框撑满视口；备货界面菜谱速查 + 一键买料 |
 | `v0.3.1` | 出摊计时/收益改大字、买料累加、重渲染保留滚动位置 |
 | `v0.4` | 主菜单 + 本地存档（run/meta 分离、迁移、清档确认）、图标放大 |
+| `v0.5` | **HD 精细像素材质全套替换**（960×540 五层视差场景、82 餐品、126 食材、13 厨具、8 类顾客×5 态）+ 分场景 BGM |
 
 ---
 
@@ -128,13 +132,15 @@ node tools/headless_run.mjs     # 无头模拟一个玩家跑完 7 天，打印�
 - 成品跨日保留、冰柜冷藏加成、外卖渠道未做
 - 数值是 v0 骨架，靠无头模拟粗调过一轮，远未平衡
 - 移动端只做了等比缩放，没有触屏专项适配
+- BGM 曲目为商业作品，未随仓库分发（见 `sound/README.md`）
 
 ---
 
 ## 素材与授权
 
 - **字体**：[缝合像素字体 Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font)（作者 TakWolf，版本 2026.10.25，简体中文子集），**SIL Open Font License 1.1**。再分发时请附带上游 OFL 全文。
-- **美术素材**：本项目自制的占位像素素材（`assets/art`）。
+- **美术素材**：`assets/art_hd/` 为 AI 生成的 HD 精细像素素材（生成脚本与提示词见 `tools/artgen*.py`、`tools/art_prompts.py`）。
+- **BGM**：曲目版权归原作者（C418 / ConcernedApe），**未随仓库分发**，详见 `sound/README.md`。
 - **数值与文案**：本项目原创。
 
 ## 许可

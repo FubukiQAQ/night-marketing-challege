@@ -2,12 +2,32 @@
 import { loadAssets } from './sprites.js';
 import { makeGame, mulberry32 } from './core.js';
 import { loadSave, writeSave, clearSave, describeSave, formatTime } from './save.js';
+import * as Audio from './audio.js';
 import { renderSell, resetScene, SCENE } from './render.js';
 import { hud, renderStock, renderPrep, renderSellShell, updateSellStats,
          renderSettle, renderMeta, renderMenu, toast, keepScroll } from './ui.js';
 
 let DATA = null;
 let pending = null;   // 读到的存档，等玩家在主菜单选
+
+/* 页面背景：用 HD 场景图的 near 层，压暗后当作大背景 */
+const BACKDROP = {
+  menu: 'assets/art_hd/scene/scene_night_near.png',
+  market: 'assets/art_hd/scene/scene_market_near.png',
+  prep: 'assets/art_hd/scene/scene_prep_near.png',
+  night: 'assets/art_hd/scene/scene_night_near.png',
+};
+function setBackdrop(name) {
+  const node = document.getElementById('bgscene');
+  if (!node) return;
+  const url = BACKDROP[name];
+  if (!url) return;
+  if (node.dataset.key === url) { node.classList.add('on'); return; }
+  node.dataset.key = url;
+  const img = new Image();
+  img.onload = () => { node.style.backgroundImage = 'url(' + url + ')'; node.classList.add('on'); };
+  img.src = url;
+}
 let menuOpts = { confirming: false, help: false };
 
 let G = null;
@@ -35,6 +55,7 @@ async function boot() {
 
   window.addEventListener('click', onClick);
   window.addEventListener('input', onChange);
+  Audio.installUnlock();
 
   const dev = new URLSearchParams(location.search).get('dev');
   if (dev === 'menuflow') {
@@ -72,6 +93,9 @@ function showMenu() {
   const meta = pending && pending.meta ? pending.meta : null;
   const layerTotal = meta
     ? Object.values(meta.layers || {}).reduce((a, b) => a + b, 0) : 0;
+  Audio.play('menu');
+  setBackdrop('menu');
+  document.getElementById('app').classList.add('menu-mode');
   renderMenu({
     desc,
     hasMeta: !!meta,
@@ -215,6 +239,7 @@ async function menuFlowTest() {
 
 /* ---------------------------------------------------------------- 开发用自动推进 */
 function devAuto(mode) {
+  if (mode === 'stock') return;            // 停在备货阶段，方便截图/调试
   const core = ['potato', 'rice', 'flour', 'egg', 'chicken_steak', 'starch_sausage',
     'veg_mixed', 'condiment', 'ice', 'cola'];
   core.forEach((ing) => {
@@ -278,14 +303,15 @@ function save() {
 function route() {
   cancelAnimationFrame(raf);
   raf = 0;
+  document.getElementById('app').classList.remove('menu-mode');
   hud(G);
   switch (G.s.phase) {
-    case 'STOCK': renderStock(G); save(); break;
-    case 'PREP': renderPrep(G); save(); break;
-    case 'SELL': startSellView(); break;
-    case 'SETTLE': renderSettle(G); save(); break;
-    case 'META': renderMeta(G); save(); break;
-    default: renderStock(G);
+    case 'STOCK': Audio.play('stock'); setBackdrop('market'); renderStock(G); save(); break;
+    case 'PREP': Audio.play('prep'); setBackdrop('prep'); renderPrep(G); save(); break;
+    case 'SELL': Audio.play('sell'); setBackdrop('night'); startSellView(); break;
+    case 'SETTLE': Audio.play('sell'); setBackdrop('night'); renderSettle(G); save(); break;
+    case 'META': Audio.play('menu'); setBackdrop('menu'); renderMeta(G); save(); break;
+    default: Audio.play('stock'); renderStock(G);
   }
 }
 
@@ -367,6 +393,12 @@ function onClick(ev) {
     }
     case 'wipe': {
       wipeSave();
+      break;
+    }
+    case 'mute': {
+      const muted = Audio.toggleMute();
+      t.textContent = muted ? '🔇' : '🔊';
+      hud(G);
       break;
     }
     case 'help': {

@@ -1,16 +1,39 @@
-﻿node_modules/
+# 依赖与临时
+node_modules/
+__pycache__/
+*.pyc
+*.log
+
+# 浏览器临时 profile / 截图
 _edge*/
 _e[0-9]*/
 _e_*/
 _f*/
 _g[0-9]*/
 _final*/
-*.log
+_k[0-9]*/
+_m-*/
+_n-*/
+_p-*/
+_q*/
+_r[0-9]*/
 _dom*.txt
 _d.txt
 _shot*.png
 _v2*.png
 _meta.png
 _settle.png
-__pycache__/
-*.pyc
+_hd-*.png
+_layout.txt
+_textcheck.txt
+
+# 音频：商业曲目，不入库（见 sound/README.md）
+sound/*.mp3
+sound/*.wav
+sound/*.ogg
+
+# 美术生成中间产物：体积大，可由 RUN_ART.bat 重跑
+assets/art_hd/_raw/
+assets/art_hd/overview/
+assets/art_hd/_run.log
+assets/art_hd/_state.json

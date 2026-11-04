@@ -827,14 +827,14 @@ export function makeGame(DATA) {
   G.bonusPool = function () {
     const s = G.s;
     const pool = [
-      { id: 'surface', name: '摊位扩容', desc: '台面 +4 格', icon: 'skill_bonus_space', apply: () => { G.B.surface += 4; } },
-      { id: 'storage', name: '多买一个冰柜', desc: '储存 +6 格', icon: 'skill_bonus_stock', apply: () => { G.B.storage += 6; } },
-      { id: 'time', name: '手脚麻利', desc: '备餐时间 +60 分钟', icon: 'skill_bonus_service', apply: () => { G.B.prepMinutes += 60; } },
-      { id: 'profit', name: '会做生意', desc: '全摊利润 +8%', icon: 'skill_bonus_gold', apply: () => { s.permanentProfit = (s.permanentProfit || 0) + 0.08; } },
-      { id: 'fresh', name: '保温箱', desc: '成品风味衰减 -20%', icon: 'skill_bonus_food', apply: () => { s.permanentFresh = (s.permanentFresh || 0) + 0.2; } },
-      { id: 'traffic', name: '老主顾', desc: '客流 +10%', icon: 'skill_bonus_drink', apply: () => { s.permanentTraffic = (s.permanentTraffic || 0) + 0.1; } },
-      { id: 'layers', name: '灯又亮了几颗', desc: '所有已激活词条 +3 层', icon: 'skill_bonus_qte', apply: () => { Object.keys(G.activeTraits()).forEach((k) => { s.layers[k] = (s.layers[k] || 0) + 3; }); } },
-      { id: 'utensil', name: '添置厨具', desc: '免费获得一件未拥有厨具', icon: 'skill_bonus_space', apply: () => { const miss = DATA.utensils.find((u) => !s.utensils.includes(u.id)); if (miss) s.utensils.push(miss.id); } },
+      { id: 'surface', name: '摊位扩容', desc: '台面 +4 格', icon: 'ui/ui_node_active.png', apply: () => { G.B.surface += 4; } },
+      { id: 'storage', name: '多买一个冰柜', desc: '储存 +6 格', icon: 'ui/ui_node_ready.png', apply: () => { G.B.storage += 6; } },
+      { id: 'time', name: '手脚麻利', desc: '备餐时间 +60 分钟', icon: 'ui/ui_progress_fill_warm.png', apply: () => { G.B.prepMinutes += 60; } },
+      { id: 'profit', name: '会做生意', desc: '全摊利润 +8%', icon: 'ui/ui_star_full.png', apply: () => { s.permanentProfit = (s.permanentProfit || 0) + 0.08; } },
+      { id: 'fresh', name: '保温箱', desc: '成品风味衰减 -20%', icon: 'ui/ui_stamp_good.png', apply: () => { s.permanentFresh = (s.permanentFresh || 0) + 0.2; } },
+      { id: 'traffic', name: '老主顾', desc: '客流 +10%', icon: 'ui/ui_trend_up.png', apply: () => { s.permanentTraffic = (s.permanentTraffic || 0) + 0.1; } },
+      { id: 'layers', name: '灯又亮了几颗', desc: '所有已激活词条 +3 层', icon: 'ui/ui_star_full.png', apply: () => { Object.keys(G.activeTraits()).forEach((k) => { s.layers[k] = (s.layers[k] || 0) + 3; }); } },
+      { id: 'utensil', name: '添置厨具', desc: '免费获得一件未拥有厨具', icon: 'ui/ui_node_active.png', apply: () => { const miss = DATA.utensils.find((u) => !s.utensils.includes(u.id)); if (miss) s.utensils.push(miss.id); } },
     ];
     return pool;
   };
