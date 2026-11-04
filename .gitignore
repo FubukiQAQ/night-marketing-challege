@@ -12,3 +12,5 @@ _shot*.png
 _v2*.png
 _meta.png
 _settle.png
+__pycache__/
+*.pyc
