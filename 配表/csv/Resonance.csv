@@ -1,0 +1,9 @@
+﻿resonance_id,共鸣名,词条A,A层数门槛,词条B,B层数门槛,词条C,C层数门槛,说明
+R01,解辣搭档,spicybuff,25,madedrink,20,,,辣货 + 现做饮品：辣单一律带动饮品
+R02,下酒组合,sizzle,15,cheers,10,,,炸货 + 包装饮料：单客瓶数提升
+R03,一餐够了,full,15,warm,10,,,主食 + 汤羹：客单价提升
+R04,夜市标配,fastest,20,ember,15,,,速食 + 烤物：出餐与客流双修
+R05,冷盘双拼,iceice,8,oldbrine,15,,,凉菜 + 卤味：冷盘份数与评价提升
+R06,甜辣风暴,sugarhigh,10,spicybuff,25,,,甜点 + 辣货：甜点触发解辣连锁加购
+R07,铁板双煞,ember,15,sizzle,15,,,烤物 + 炸货：连击累加提速
+R08,全摊大满贯,fastest,50,sizzle,50,cheers,50,速食+炸货+饮料同时达标：全摊利润

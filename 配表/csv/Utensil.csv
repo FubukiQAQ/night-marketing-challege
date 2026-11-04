@@ -1,0 +1,14 @@
+﻿utensil_id,名称,占台面格,工位数,解锁价,服务标签,特殊,关联餐品数
+pot,锅,2,1,0,"fast,staple,madedish,soup,dessert",开局自带,10
+fryer,炸锅,2,1,180,fried,出餐慢、单份价值高,11
+grill,烤炉,3,1,320,grilled,炭火，占台面大,8
+griddle,铁板,3,1,300,"grilled,madedish",连击友好,2
+steamer,蒸笼,2,1,220,"staple,dessert",不产生额外香气,2
+soup_pot,汤桶,2,2,240,soup,2 工位，适合慢炖,8
+braise_pot,卤锅,3,1,280,braised,卤汁跨日保留，风味衰减更慢,8
+ice_maker,制冰机,1,1,200,"madedrink,drink,cold,dessert",冰品必备,5
+juicer,榨汁机,1,1,160,madedrink,单次只能榨 1 份,2
+soymilk,豆浆机,1,1,150,madedrink,只能做豆浆类,1
+blender,搅拌机,1,1,170,"dessert,madedrink",奶昔、冰沙类,6
+rice_cooker,电饭煲,2,1,180,"staple,soup",可保温，风味衰减慢,3
+fridge,冰柜,3,1,260,"cold,braised",成品风味衰减 -35%,8

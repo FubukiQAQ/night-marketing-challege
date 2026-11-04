@@ -1,0 +1,19 @@
+﻿gain_id,source_type,是否挂在餐品上,target,默认单日上限,说明
+G01,per_sold,是,own_tag,K(餐品),每售出 N0 份，所属已激活词条 +1；N 随 X 增长
+G02,per_sold,是,random_active,K(餐品),每售出 N0 份，随机一条已激活词条 +1
+G03,per_sold,是,highest,K(餐品),每售出 N0 份，层数最高的已激活词条 +1
+G04,per_sold,是,lowest,K(餐品),每售出 N0 份，层数最低的已激活词条 +1
+G05,per_sold,是,own_tag_noreq,K(餐品),每售出 N0 份，所属词条 +1（无需激活）
+G06,per_sold_chance,是,own_tag,K(餐品),每份 P 概率，所属已激活词条 +1
+G07,per_sold_chance,是,random_active,K(餐品),每份 P 概率，随机已激活词条 +1
+G08,per_revenue,是,own_tag,K(餐品),每满 M 元，所属已激活词条 +1
+G09,on_phase_enter,是,all_active,1/日,进入出摊阶段时，所有已激活词条 +n
+G10,on_phase_exit,是,all_active,1/日,结束出摊阶段时，所有已激活词条 +n
+G11,on_first_sold,是,highest,1/日,当日首次售出时触发（可按空间等条件）
+G12,on_first_sold,是,own_tag,1/日,当日首次售出时，所属词条 +n
+G13,on_customer_type,全局,random_active,3/日,特殊顾客成交时给层数
+G14,on_qte_result,全局,random_active,3/日,QTE 成功给层数，失败不给
+G15,on_streak,全局,own_tag,连击上限,连续同属性成交达到连击数时给层数
+G16,on_fresh_tier,全局,own_tag,无上限,售出「优」档成品时额外 +1
+G17,on_event,全局,random_active,事件定义,事件结果给层数（如夜市活动）
+G18,on_resonance,全局,specific,共鸣定义,共鸣激活时给指定词条层数
