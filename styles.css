@@ -291,7 +291,7 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
 .sup-mark { margin-left: auto; font-size: var(--fs-tiny); color: var(--dim); }
 .item {
   display: grid;
-  grid-template-columns: 24px 1fr auto auto auto;
+  grid-template-columns: 30px 1fr auto auto auto;
   gap: 12px;
   align-items: center;
   padding: 6px 0;
@@ -309,7 +309,7 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
 .food-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 12px; }
 .food {
   display: grid;
-  grid-template-columns: 36px 1fr auto;
+  grid-template-columns: 48px 1fr auto;
   gap: 14px;
   align-items: center;
   background: rgba(255, 255, 255, 0.03);
@@ -327,7 +327,7 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
 .tagdot { width: 8px; height: 8px; display: inline-block; border-radius: 50%; }
 
 /* 词条面板 */
-.trait { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; padding: 10px 0; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+.trait { display: grid; grid-template-columns: 36px 1fr; gap: 10px; align-items: start; padding: 10px 0; border-top: 1px solid rgba(255, 255, 255, 0.05); }
 .trait:first-of-type { border-top: 0; }
 .trait-row2 { display: flex; align-items: center; gap: 10px; font-size: var(--fs-tiny); }
 .trait-name { color: var(--muted); }
@@ -479,7 +479,7 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
 /* 菜谱速查 */
 .dish-row {
   display: grid;
-  grid-template-columns: 28px 1fr auto;
+  grid-template-columns: 38px 1fr auto;
   gap: 10px;
   align-items: center;
   padding: 8px 0;
@@ -498,3 +498,68 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
   .col-side { flex: 0 0 300px; }
   .food-list { grid-template-columns: 1fr; }
 }
+
+/* ---------------------------------------------- 主菜单 */
+.menu {
+  min-height: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+  padding: 24px 8px;
+}
+.menu-kicker {
+  font-size: var(--fs-tiny);
+  letter-spacing: 0.32em;
+  color: var(--accent);
+  opacity: 0.85;
+}
+.menu-title {
+  margin: 0;
+  font-size: clamp(44px, 5vw, 76px);
+  line-height: 1.05;
+  font-weight: normal;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.menu-title span { color: var(--accent); }
+.menu-sub {
+  margin: 0;
+  font-size: var(--fs);
+  color: var(--muted);
+  line-height: 1.7;
+}
+.menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+  max-width: 680px;
+}
+.menu-actions button { text-align: left; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+button.big {
+  font-size: var(--fs);
+  padding: 16px 26px;
+  letter-spacing: 0.02em;
+}
+.menu-foot {
+  font-size: var(--fs-tiny);
+  color: var(--dim);
+  letter-spacing: 0.06em;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  margin-top: 8px;
+}
+.menu-help-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 18px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: var(--fs-tiny);
+  line-height: 1.8;
+}
+.menu-help-row b { color: var(--accent); font-weight: normal; letter-spacing: 0.1em; }
+.menu-help-row span { color: var(--muted); }

@@ -1,5 +1,6 @@
 // ui.js — 全部界面（DOM 渲染 + 事件委托）
 import { icon } from './sprites.js';
+import { formatTime } from './save.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (id) => document.getElementById(id);
@@ -37,23 +38,77 @@ export function hud(G) {
   let bar = '';
   if (s.phase === 'STOCK' || s.phase === 'PREP') {
     const p = Math.max(0, Math.min(1, s.minutesLeft / total));
-    bar = `<div class="hud-timer">${icon('ico/state_timer.png', 14)}
+    bar = `<div class="hud-timer">${icon('ico/state_timer.png', 18)}
       <div class="bar ${p < 0.25 ? 'warn' : ''}"><i style="width:${p * 100}%"></i></div>
       <span>${Math.round(s.minutesLeft)} 分</span></div>`;
   } else if (s.phase === 'SELL' && s.sell) {
     const p = s.sell.tick / G.B.sellTicks;
-    bar = `<div class="hud-timer">${icon('ico/state_clock.png', 14)}
+    bar = `<div class="hud-timer">${icon('ico/state_clock.png', 18)}
       <div class="bar"><i style="width:${p * 100}%"></i></div>
       <span>${(p * 100).toFixed(0)}%</span></div>`;
   }
   el('hud').innerHTML = `
     <span class="hud-day">第 ${s.day} / ${G.B.dayCount} 天</span>
-    <span class="hud-cash ${s.cash < 0 ? 'neg' : ''}">${icon('ico/state_coin.png', 14)} ${money(s.cash)}</span>
+    <span class="hud-cash ${s.cash < 0 ? 'neg' : ''}">${icon('ico/state_coin.png', 18)} ${money(s.cash)}</span>
     <span class="hud-phase">${phaseName}</span>
     ${bar}
     <span class="hud-spacer"></span>
     <span class="hud-meta">口碑 ${Math.round(s.rep)} · 昨日 ${Math.round(s.lastScore)} 分 · 第 ${s.run} 轮</span>
+    <button class="small ghost" data-act="menu">菜单</button>
   `;
+}
+
+
+/* ---------------------------------------------------------------- 主菜单 */
+const HELP = [
+  ['目标', '七天一期。把一个小摊子做成这条街最亮的那个。'],
+  ['一天三段', '备货 8:00-14:00 买料 → 备餐 14:00-20:00 定菜单/定价/预加工 → 出摊 20:00-24:00 实时 60 秒。'],
+  ['词条', '同属性的菜上架够款数才会点亮词条（速食 3 款 / 辣 4 款 / 饮品 5 款…）。'],
+  ['层数', '卖出成交会养层数，层数永久累积、不封顶，跨日跨轮都在。'],
+  ['风味', '预加工成成品的能立刻取走，但放久了会掉档；废档不能卖。'],
+  ['评分', '营业额达成 + 顾客满意度 − 客诉 − 缺货流失。评分决定次日客流和今日经验。'],
+  ['存档', '阶段切换自动存本地。出摊中途退回菜单会回到备餐阶段。'],
+];
+
+export function renderMenu(o) {
+  const d = o.desc;
+  el('hud').innerHTML = `<span class="hud-day">不烧心夜市挑战</span>
+    <span class="hud-spacer"></span>
+    <span class="hud-meta">本地存档 · v0.4</span>`;
+
+  if (o.help) {
+    el('stage').innerHTML = `<div class="menu">
+      <div class="menu-kicker">玩法速览</div>
+      ${HELP.map(([k, v]) => `<div class="menu-help-row"><b>${k}</b><span>${v}</span></div>`).join('')}
+      <div class="menu-actions">
+        <button class="primary" data-act="backMenu">← 返回主菜单</button>
+      </div>
+    </div>`;
+    el('bar').innerHTML = `<span>存档在本地浏览器里，换浏览器就没了。</span>`;
+    return;
+  }
+
+  const saveLine = d ? `第 ${d.day} / 7 天 · ${money(d.cash)}` : '还没有存档';
+
+  el('stage').innerHTML = `<div class="menu">
+    <div class="menu-kicker">七天 · 一个新摊位</div>
+    <h1 class="menu-title">不烧心<br /><span>夜市挑战</span></h1>
+    <p class="menu-sub">备货 → 备餐 → 出摊 60 秒。词条层数不封顶，摊子越做越亮。</p>
+
+    <div class="menu-actions">
+      ${d ? `<button class="primary big" data-act="continue">继续 · ${saveLine}</button>` : ''}
+      ${o.hasMeta ? `<button class="big" data-act="newRun">开始新一轮（继承层数与技能）</button>` : ''}
+      ${d || o.hasMeta ? '' : `<button class="primary big" data-act="newRun">开始第一轮</button>`}
+      <button data-act="help">玩法说明</button>
+      ${d || o.hasMeta ? `<button class="danger" data-act="wipe">${o.confirming ? '确定清空存档？再点一次' : '清空存档'}</button>` : ''}
+    </div>
+
+    <div class="menu-foot">
+      ${d ? `第 ${d.runNo} 轮 · 口碑 ${d.rep} · 存档 ${formatTime(o.savedAt)}` : '进度会存在浏览器里（localStorage）'}
+      ${o.hasMeta ? ` · 词条层数 ${o.layerTotal} 点` : ''}
+    </div>
+  </div>`;
+  el('bar').innerHTML = `<span>${d ? '继续上次进度，或开新一轮。' : '点上面的按钮开始。'}</span>`;
 }
 
 /* ---------------------------------------------------------------- 备货 */
@@ -81,7 +136,7 @@ export function renderStock(G) {
     .map(([id, q]) => {
       const ing = G.ING[id];
       return `<div class="item" style="grid-template-columns:24px 1fr auto auto">
-        <span>${icon(ing.sprite, 16)}</span>
+        <span>${icon(ing.sprite, 24)}</span>
         <span class="item-name">${ing.name}</span>
         <span class="item-stock">${ing.catName}</span>
         <span class="item-stock">×${q}</span></div>`;
@@ -98,7 +153,7 @@ export function renderStock(G) {
         ? `用于 ${all.slice(0, 4).join('、')}${all.length > 4 ? ` 等 ${all.length} 道菜` : ''}`
         : '暂时没有用到它的菜';
       return `<div class="item">
-        <span>${icon(ing.sprite, 16)}</span>
+        <span>${icon(ing.sprite, 24)}</span>
         <span class="item-name">${ing.name}</span>
         <span class="item-price">${money(it.price)}</span>
         <span class="item-stock">${out ? '售罄' : '×' + it.stock}</span>
@@ -111,7 +166,7 @@ export function renderStock(G) {
       </div>`;
     }).join('');
     return `<div class="sup ${sup.closed ? 'closed' : ''}">
-      <div class="sup-head">${icon(sup.closed ? 'ui/ui_supply_closed.png' : 'ui/ui_supply_open.png', 16)}
+      <div class="sup-head">${icon(sup.closed ? 'ui/ui_supply_closed.png' : 'ui/ui_supply_open.png', 22)}
         ${sup.name}<span class="sup-mark">加价 ${(sup.markup * 100).toFixed(0)}%</span></div>
       ${sup.closed ? '<div class="hint">今天没开门</div>' : items}
     </div>`;
@@ -122,7 +177,7 @@ export function renderStock(G) {
     const tags = f.tags.map((t) => `<span class="dish-tags">${G.TAG[t] ? G.TAG[t].name : t}</span>`).join(' ');
     const canMake = f.recipe.every((r) => (s.inventory[r.ing] || 0) >= r.qty || !!G.offerFor(r.ing));
     return `<div class="dish-row">
-      <span>${icon(f.sprite, 24)}</span>
+      <span>${icon(f.sprite, 44)}</span>
       <span>
         <div class="dish-name">${f.name} ${tags} <span class="muted">· ${money(f.price)}</span></div>
         <div class="dish-recipe">${recipeText(G, f)}</div>
@@ -181,7 +236,7 @@ export function renderPrep(G) {
       return `<span class="tiny" style="color:${tagColor(t)}">${tg ? tg.name : t}${tr && act[tr.id] ? '✓' : ''}</span>`;
     }).join(' ');
     return `<div class="food ${on ? 'on' : ''}">
-      <span>${icon(f.sprite, 32)}</span>
+      <span>${icon(f.sprite, 44)}</span>
       <span>
         <span class="food-name">${f.name} ${tags}${hasUt ? '' : '<span class="warn tiny">缺厨具</span>'}</span>
         <span class="food-sub">空间 ${f.space} 格 · 现做 ${(f.serveTicks / 200).toFixed(2)}s · 备好 ${pre} 份 · 食材够 ${raw} 份</span>
@@ -206,7 +261,7 @@ export function renderPrep(G) {
     const dots = Array.from({ length: Math.min(tr.needMenu, 6) }, (_, i) =>
       `<span class="dot-sq ${i < Math.min(cnt, tr.needMenu) ? 'on' : ''}"></span>`).join('');
     return `<div class="trait ${on ? 'on' : ''} ${near ? 'near' : ''}">
-      <span>${icon('ico/' + tr.icon + '.png', 20)}</span>
+      <span>${icon('ico/' + tr.icon + '.png', 28)}</span>
       <span>
         <div class="trait-row2">
           <span class="trait-name">${tr.name}</span>
@@ -225,7 +280,7 @@ export function renderPrep(G) {
 
   const resoRows = G.DATA.traits.resonances.map((r) => {
     const ok = mods.resonances.find((x) => x.id === r.id);
-    return `<div class="tiny ${ok ? 'reso' : 'muted'}">${icon('ico/' + r.icon + '.png', 16)}
+    return `<div class="tiny ${ok ? 'reso' : 'muted'}">${icon('ico/' + r.icon + '.png', 20)}
       ${r.name} <span class="muted">(${r.a}/${r.b}${r.c ? '/' + r.c : ''})</span>
       ${ok ? `→${ok.tier ? ok.tier.tier + '档' : '生效'}` : ''}</div>`;
   }).join('');
@@ -235,23 +290,23 @@ export function renderPrep(G) {
 
   el('stage').innerHTML = `<div class="cols">
     <div class="col-main">
-      <div class="panel"><h3 class="panel-title">${icon('ico/state_sale.png', 14)} 餐品库（点"上架"加入今日菜单）</h3>
+      <div class="panel"><h3 class="panel-title">${icon('ico/state_sale.png', 18)} 餐品库（点"上架"加入今日菜单）</h3>
         <div class="food-list">${foodRows}</div>
       </div>
     </div>
     <div class="col-side">
       <div class="panel">
-        <h3 class="panel-title">${icon('ico/trait_speed.png', 14)} 词条面板</h3>
+        <h3 class="panel-title">${icon('ico/trait_speed.png', 18)} 词条面板</h3>
         ${traitRows}
       </div>
       <div class="panel mt8">
-        <h3 class="panel-title">${icon('ico/state_space.png', 14)} 空间</h3>
+        <h3 class="panel-title">${icon('ico/state_space.png', 18)} 空间</h3>
         <div class="hint">台面 <b class="${over ? 'warn' : 'ok'}">${used.toFixed(0)} / ${G.B.surface}</b> 格（含厨具）</div>
         <div class="hint">储存 ${G.storageUsed().toFixed(1)} / ${G.B.storage} 格</div>
         ${over ? '<div class="warn tiny">台面超了，下架几道或少上大件</div>' : ''}
       </div>
       <div class="panel mt8">
-        <h3 class="panel-title">${icon('ico/reso_spicy_fast.png', 14)} 共鸣</h3>
+        <h3 class="panel-title">${icon('ico/reso_spicy_fast.png', 18)} 共鸣</h3>
         ${resoRows}
       </div>
     </div>
@@ -281,7 +336,7 @@ function menuNeedRows(G) {
       const have = s.inventory[id] || 0;
       const short = have < q;
       return `<div class="item" style="grid-template-columns:24px 1fr auto auto">
-        <span>${icon(ing.sprite, 16)}</span>
+        <span>${icon(ing.sprite, 24)}</span>
         <span class="item-name ${short ? 'warn' : ''}">${ing.name}</span>
         <span class="item-stock">每份需 ${q}</span>
         <span class="item-stock ${short ? 'warn' : 'ok'}">库存 ${have}</span>
@@ -303,8 +358,8 @@ export function renderSellShell(G) {
   const s = G.s;
   el('stage').innerHTML = `<div id="sellwrap">
     <div class="sell-top">
-      <span class="sell-clock">${icon('ico/state_clock.png', 20)} 剩余 <b id="sellleft">60</b><span class="unit">s</span></span>
-      <span class="sell-rev">${icon('ico/state_coin.png', 20)} <b id="sellrev">0</b></span>
+      <span class="sell-clock">${icon('ico/state_clock.png', 26)} 剩余 <b id="sellleft">60</b><span class="unit">s</span></span>
+      <span class="sell-rev">${icon('ico/state_coin.png', 26)} <b id="sellrev">0</b></span>
     </div>
     <canvas id="sellcanvas" width="640" height="360"></canvas>
     <div class="sellbar" id="sellstats"></div>
@@ -333,9 +388,9 @@ export function updateSellStats(G) {
   const revEl = el('sellrev');
   if (revEl) revEl.textContent = S.revenue.toFixed(0);
   dom.innerHTML = `
-    <span class="pill">${icon('ico/state_sale.png', 14)} 卖出 <b>${S.served}</b></span>
-    <span class="pill">${icon('ico/state_stockout.png', 14)} 流失 <b>${S.lost}</b></span>
-    <span class="pill">${icon('ico/state_complaint.png', 14)} 客诉 <b>${Math.round(S.complaints)}</b></span>
+    <span class="pill">${icon('ico/state_sale.png', 18)} 卖出 <b>${S.served}</b></span>
+    <span class="pill">${icon('ico/state_stockout.png', 18)} 流失 <b>${S.lost}</b></span>
+    <span class="pill">${icon('ico/state_complaint.png', 18)} 客诉 <b>${Math.round(S.complaints)}</b></span>
     ${chips || '<span class="muted tiny">今天没有词条激活 —— 明天试试把同属性的菜多上几款</span>'}`;
 }
 
@@ -353,7 +408,7 @@ export function renderSettle(G) {
   }
   el('stage').innerHTML = `
     <div class="panel">
-      <h3 class="panel-title">${icon('ico/state_bill.png', 16)} 第 ${st.day} 天 · 打烊结算</h3>
+      <h3 class="panel-title">${icon('ico/state_bill.png', 20)} 第 ${st.day} 天 · 打烊结算</h3>
       <div class="settle-grid">
         <div class="kpi"><div class="k">营业额</div><div class="v acc">${money(st.revenue)}</div>
           <div class="tiny muted">目标 ${money(st.target)}</div></div>
@@ -365,10 +420,10 @@ export function renderSettle(G) {
       <div class="hint mt8">获得经验 ${st.exp} · 口碑 ${Math.round(G.s.rep)}</div>
     </div>
     <div class="panel mt8">
-      <h3 class="panel-title">${icon('ico/state_combo_up.png', 16)} 选一个加成（本局永久生效）</h3>
+      <h3 class="panel-title">${icon('ico/state_combo_up.png', 20)} 选一个加成（本局永久生效）</h3>
       <div class="bonus-grid">
         ${pool.map((b) => `<div class="bonus" data-act="bonus" data-b="${b.id}">
-          ${icon('ico/' + b.icon + '.png', 24)}<b>${b.name}</b><span>${b.desc}</span></div>`).join('')}
+          ${icon('ico/' + b.icon + '.png', 36)}<b>${b.name}</b><span>${b.desc}</span></div>`).join('')}
       </div>
     </div>`;
   el('bar').innerHTML = `<span class="muted tiny">选一张卡继续</span>`;
@@ -387,7 +442,7 @@ export function renderMeta(G) {
     </div>`;
   el('stage').innerHTML = `
     <div class="panel">
-      <h3 class="panel-title">${icon('ui/ui_rank.png', 16)} 第 ${s.run} 轮 · 7 天结束</h3>
+      <h3 class="panel-title">${icon('ui/ui_rank.png', 20)} 第 ${s.run} 轮 · 7 天结束</h3>
       <div class="settle-grid">
         ${s.history.map((h) => `<div class="kpi"><div class="k">第 ${h.day} 天</div>
           <div class="v">${h.score.toFixed(0)}</div><div class="tiny muted">${money(h.revenue)}</div></div>`).join('')}
@@ -395,7 +450,7 @@ export function renderMeta(G) {
       <div class="hint mt8">平均评分 <b>${avg.toFixed(1)}</b> · 总经验 ${s.exp} · 可用技能点 <b class="gold">${pts}</b></div>
     </div>
     <div class="panel mt8">
-      <h3 class="panel-title">${icon('ico/skill_capacity.png', 16)} 技能（跨轮永久）</h3>
+      <h3 class="panel-title">${icon('ico/skill_capacity.png', 20)} 技能（跨轮永久）</h3>
       <div class="cols">
         ${branch('eff', '效率', '备餐时间 +30 分钟/级')}
         ${branch('cap', '容量', '台面 +3 格/级')}
@@ -403,9 +458,9 @@ export function renderMeta(G) {
       </div>
     </div>
     <div class="panel mt8">
-      <h3 class="panel-title">${icon('ui/ui_bulb_on.png', 16)} 词条层数（永久累积，不会清零）</h3>
+      <h3 class="panel-title">${icon('ui/ui_bulb_on.png', 20)} 词条层数（永久累积，不会清零）</h3>
       <div class="sellbar">
-        ${G.DATA.traits.traits.map((tr) => `<span class="pill">${icon('ico/' + tr.icon + '.png', 14)} ${tr.name}
+        ${G.DATA.traits.traits.map((tr) => `<span class="pill">${icon('ico/' + tr.icon + '.png', 18)} ${tr.name}
           <b>X${Math.round(s.layers[tr.id] || 0)}</b></span>`).join('')}
       </div>
     </div>`;
