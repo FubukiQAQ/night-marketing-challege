@@ -4,13 +4,19 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>不烧心夜市挑战</title>
+<link rel="preload" href="assets/fonts/fusion-pixel-12px.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div id="app">
-  <header id="hud"></header>
-  <main id="stage"></main>
-  <footer id="bar"></footer>
+<div class="dot" aria-hidden="true"></div>
+<div class="dot l2" aria-hidden="true"></div>
+<div class="dot l3" aria-hidden="true"></div>
+<div id="viewport">
+  <div id="app">
+    <header id="hud"></header>
+    <main id="stage"></main>
+    <footer id="bar"></footer>
+  </div>
 </div>
 <div id="toast"></div>
 <script type="module" src="src/main.js"></script>

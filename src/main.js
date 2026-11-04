@@ -61,7 +61,7 @@ async function devPlay() {
   for (let d = 0; d < 7; d++) {
     // 备货：核心食材各买 30
     for (let k = 0; k < 8; k++) {
-      const list = [...document.querySelectorAll('[data-act="buy"][data-q="30"]')];
+      const list = [...document.querySelectorAll('[data-act="buy"][data-q="10"]')];
       const b = list[k % Math.max(1, list.length)];
       if (!b) break;
       b.click();
@@ -71,7 +71,7 @@ async function devPlay() {
     if (d === 0) {
       for (let k = 0; k < 3; k++) {
         const card = [...document.querySelectorAll('.food')].find((c) => {
-          const m = c.textContent.match(/食材够(\d+)份/);
+          const m = c.textContent.match(/食材够\s*(\d+)\s*份/);
           const btn = c.querySelector('[data-act="toggle"]');
           return m && +m[1] >= 5 && btn && btn.textContent.trim() === '上架';
         });
