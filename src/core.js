@@ -854,6 +854,14 @@ export function makeGame(DATA) {
     return { runOver: false };
   };
 
+  // 把技能加成套到当前 B 上（开局/新一轮都走这里）
+  G.applySkills = function () {
+    const b = DATA.balance;
+    G.B.surface = (b.surface_capacity_init || 26) + (G.s.skills.cap || 0) * 3;
+    G.B.storage = (b.storage_capacity_init || 36);
+    G.B.prepMinutes = (b.prep_minutes || 360) + (G.s.skills.eff || 0) * 30;
+  };
+
   G.skillPoints = function () {
     const s = G.s;
     return Math.floor(s.exp / G.B.expPerPoint) - (s.skills.eff + s.skills.cap + s.skills.flv);
@@ -873,10 +881,8 @@ export function makeGame(DATA) {
       run: s.run + 1, layers: s.layers, exp: s.exp, skills: s.skills,
       utensils: s.utensils, runs: (s.runs || 0) + 1, bestDay: Math.max(s.bestDay, G.B.dayCount),
     };
-    G.B.surface = num('surface_capacity_init', 16) + s.skills.cap * 3;
-    G.B.storage = num('storage_capacity_init', 24);
-    G.B.prepMinutes = num('prep_minutes', 360) + s.skills.eff * 30;
     G.startRun(carry);
+    G.applySkills();
   };
 
   return G;

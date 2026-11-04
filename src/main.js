@@ -1,11 +1,14 @@
 // main.js — 引导、阶段路由、出摊循环、事件委托
 import { loadAssets } from './sprites.js';
-import { makeGame } from './core.js';
+import { makeGame, mulberry32 } from './core.js';
+import { loadSave, writeSave, clearSave, describeSave, formatTime } from './save.js';
 import { renderSell, resetScene, SCENE } from './render.js';
 import { hud, renderStock, renderPrep, renderSellShell, updateSellStats,
-         renderSettle, renderMeta, toast, keepScroll } from './ui.js';
+         renderSettle, renderMeta, renderMenu, toast, keepScroll } from './ui.js';
 
-const SAVE_KEY = 'bushaoxin.v1';
+let DATA = null;
+let pending = null;   // 读到的存档，等玩家在主菜单选
+let menuOpts = { confirming: false, help: false };
 
 let G = null;
 let raf = 0;
@@ -24,30 +27,98 @@ async function boot() {
     loadJSON('src/data/foods.json'), loadJSON('src/data/ingredients.json'),
     loadJSON('src/data/utensils.json'), loadJSON('src/data/balance.json'),
   ]);
-  const DATA = { tags, traits, foods, ingredients, utensils, balance };
+  DATA = { tags, traits, foods, ingredients, utensils, balance };
   await loadAssets();
 
   G = makeGame(DATA);
-  const saved = loadSave();
-  if (saved) {
-    G.s = saved;
-    if (G.s.phase === 'SELL') { G.s.phase = 'PREP'; G.s.sell = null; }
-    toast('已读取上次进度');
-  } else {
-    G.startRun(null);
-  }
+  pending = loadSave();
 
   window.addEventListener('click', onClick);
+  window.addEventListener('input', onChange);
+
   const dev = new URLSearchParams(location.search).get('dev');
-  if (dev === 'play') {
-    route();
-    try { document.title = 'E2E ' + (await devPlay()); }
-    catch (e) { document.title = 'E2E FAIL ' + e.message; }
+  if (dev === 'menuflow') {
+    showMenu();
+    try { document.title = await menuFlowTest(); }
+    catch (e) { document.title = 'MENU FAIL ' + e.message; }
     return;
   }
-  if (dev && !saved) devAuto(dev);
-  window.addEventListener('input', onChange);
+  if (dev) {
+    // 调试入口：直接开局，跳过主菜单
+    if (pending && pending.meta) {
+      G.startRun(pending.meta); G.applySkills();
+    } else {
+      G.startRun(null);
+    }
+    if (dev === 'play') {
+      route();
+      try { document.title = 'E2E ' + (await devPlay()); }
+      catch (e) { document.title = 'E2E FAIL ' + e.message; }
+      return;
+    }
+    devAuto(dev);
+    route();
+    return;
+  }
+
+  showMenu();
+}
+
+/* ---------------------------------------------------------------- 主菜单 */
+function showMenu() {
+  cancelAnimationFrame(raf);
+  raf = 0;
+  const desc = pending ? describeSave(pending) : null;
+  const meta = pending && pending.meta ? pending.meta : null;
+  const layerTotal = meta
+    ? Object.values(meta.layers || {}).reduce((a, b) => a + b, 0) : 0;
+  renderMenu({
+    desc,
+    hasMeta: !!meta,
+    confirming: menuOpts.confirming,
+    help: menuOpts.help,
+    savedAt: pending ? pending.savedAt : 0,
+    layerTotal,
+  });
+}
+
+function continueGame() {
+  const o = pending || loadSave();
+  if (!o || !o.run) { toast('没有存档'); return; }
+  G = makeGame(DATA);
+  G.s = o.run;
+  if (o.balance) G.B = Object.assign(G.B, o.balance);
+  if (G.s.phase === 'SELL') { G.s.phase = 'PREP'; G.s.sell = null; }
+  G.rng = mulberry32(G.s.rngSeed || 1);
+  menuOpts = { confirming: false, help: false };
   route();
+}
+
+function startNewRun() {
+  const o = pending || loadSave();
+  const meta = o && o.meta ? o.meta : null;
+  G = makeGame(DATA);
+  G.startRun(meta ? { ...meta } : null);
+  G.applySkills();
+  menuOpts = { confirming: false, help: false };
+  writeSave(G);
+  route();
+  toast(meta ? '新一轮：继承层数与技能' : '第一轮开始');
+}
+
+function wipeSave() {
+  if (!menuOpts.confirming) {
+    menuOpts.confirming = true;
+    showMenu();
+    return;
+  }
+  clearSave();
+  pending = null;
+  G = makeGame(DATA);
+  G.startRun(null);
+  menuOpts = { confirming: false, help: false };
+  showMenu();
+  toast('存档已清空');
 }
 
 /* ---------------------------------------------------------------- 端到端自测（?dev=play） */
@@ -95,6 +166,51 @@ async function devPlay() {
     await new Promise((r) => setTimeout(r, 0));
   }
   return step.join(' ') + ' | phase=' + G.s.phase + ' cash=' + Math.round(G.s.cash);
+}
+
+
+/* ---------------------------------------------------------------- 主菜单自测（?dev=menuflow） */
+async function menuFlowTest() {
+  const $ = (s) => document.querySelector(s);
+  const log = [];
+  // ① 首次进菜单：应有「开始第一轮」
+  if (!$('[data-act="newRun"]')) throw new Error('菜单里没有开始按钮');
+  $('[data-act="newRun"]').click();
+  if (!G.s || G.s.phase !== 'STOCK') throw new Error('没进入备货阶段');
+  log.push('开局 OK');
+
+  // ② 买点东西，记下现金
+  const buy = $('[data-act="buy"][data-q="10"]');
+  if (!buy) throw new Error('供应商按钮没渲染');
+  buy.click();
+  const cash = Math.round(G.s.cash);
+  log.push('买料后现金 ' + cash);
+
+  // ③ 回主菜单：应出现「继续」
+  $('[data-act="menu"]').click();
+  const cont = $('[data-act="continue"]');
+  if (!cont) throw new Error('回菜单后没有继续按钮');
+  log.push('继续按钮文案: ' + cont.textContent.replace(/\s+/g, ' ').trim().slice(0, 26));
+
+  // ④ 继续：状态要还原
+  cont.click();
+  if (G.s.phase !== 'STOCK') throw new Error('继续后阶段不对: ' + G.s.phase);
+  if (Math.round(G.s.cash) !== cash) throw new Error('继续后现金不一致 ' + G.s.cash + ' vs ' + cash);
+  log.push('继续还原 OK');
+
+  // ⑤ 清空存档（两次点击确认）
+  $('[data-act="menu"]').click();
+  const w1 = $('[data-act="wipe"]');
+  if (!w1) throw new Error('菜单里没有清空按钮');
+  w1.click();
+  const w2 = $('[data-act="wipe"]');
+  if (!w2 || !w2.textContent.includes('确定')) throw new Error('清空没有二次确认');
+  w2.click();
+  if (localStorage.getItem('bushaoxin.save.v2')) throw new Error('清空后存档仍然存在');
+  if (!$('[data-act="newRun"]')) throw new Error('清空后菜单异常');
+  log.push('清空存档 OK');
+
+  return 'MENU OK — ' + log.join(' | ');
 }
 
 /* ---------------------------------------------------------------- 开发用自动推进 */
@@ -154,23 +270,8 @@ function devAuto(mode) {
 /* ---------------------------------------------------------------- 存档 */
 function save() {
   if (!G || !G.s) return;
-  try {
-    const s = { ...G.s };
-    delete s.sell;
-    s.suppliers = G.s.suppliers;
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, s, balance: G.B }));
-  } catch (e) { /* 忽略 */ }
-}
-
-function loadSave() {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
-    const o = JSON.parse(raw);
-    if (!o || o.v !== 1) return null;
-    if (o.balance) G.B = Object.assign(G.B, o.balance);
-    return o.s;
-  } catch (e) { return null; }
+  writeSave(G);
+  pending = loadSave();
 }
 
 /* ---------------------------------------------------------------- 路由 */
@@ -182,7 +283,7 @@ function route() {
     case 'STOCK': renderStock(G); save(); break;
     case 'PREP': renderPrep(G); save(); break;
     case 'SELL': startSellView(); break;
-    case 'SETTLE': renderSettle(G); break;
+    case 'SETTLE': renderSettle(G); save(); break;
     case 'META': renderMeta(G); save(); break;
     default: renderStock(G);
   }
@@ -245,6 +346,38 @@ function onClick(ev) {
       if (!res.ok) toast('没买齐：缺 ' + res.miss.join('、'));
       else toast(`已按 ${t.dataset.n || 5} 份备齐 ${G.FOOD[t.dataset.f].name} 的料`);
       hud(G); keepScroll(() => renderStock(G));
+      break;
+    }
+    case 'menu': {
+      cancelAnimationFrame(raf);
+      raf = 0;
+      save();
+      pending = loadSave();
+      menuOpts = { confirming: false, help: false };
+      showMenu();
+      break;
+    }
+    case 'continue': {
+      continueGame();
+      break;
+    }
+    case 'newRun': {
+      startNewRun();
+      break;
+    }
+    case 'wipe': {
+      wipeSave();
+      break;
+    }
+    case 'help': {
+      menuOpts.help = true;
+      showMenu();
+      break;
+    }
+    case 'backMenu': {
+      menuOpts.help = false;
+      menuOpts.confirming = false;
+      showMenu();
       break;
     }
     case 'toPrep': {
