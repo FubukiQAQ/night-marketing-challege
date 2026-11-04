@@ -301,6 +301,7 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
 .item:first-of-type { border-top: 0; }
 .item-name { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .item > span:nth-child(2) { min-width: 0; }
+.item { padding: 7px 0 5px; }
 .item-price { color: var(--accent); font-variant-numeric: tabular-nums; }
 .item-stock { color: var(--dim); min-width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
 
@@ -347,12 +348,45 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
 
 /* 出摊 */
 #sellwrap { display: flex; flex-direction: column; gap: 14px; align-items: center; height: 100%; min-height: 0; }
+.sell-top {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 8px;
+}
+.sell-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs);
+  color: var(--muted);
+}
+.sell-clock b {
+  font-size: var(--fs-xl);
+  color: var(--text);
+  font-weight: normal;
+  font-variant-numeric: tabular-nums;
+}
+.sell-clock .unit { font-size: var(--fs); color: var(--dim); }
+.sell-rev {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-lg);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.sell-rev b { font-size: var(--fs-xl); font-weight: normal; }
 #sellwrap canvas { flex: 1 1 auto; min-height: 0; }
 #sellcanvas {
-  width: 100%;
   height: 100%;
+  width: auto;
+  max-width: 100%;
   min-height: 0;
-  object-fit: contain;
+  aspect-ratio: 16 / 9;
+  object-fit: fill;
   image-rendering: pixelated;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -457,7 +491,7 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
 .dish-tags { color: var(--dim); }
 .dish-recipe { color: var(--muted); margin-top: 3px; line-height: 1.7; }
 .dish-recipe .lack { color: var(--warn); }
-.used-by { color: var(--dim); font-size: 11px; margin-top: 2px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.used-by { color: var(--dim); font-size: 11px; line-height: 1.4; grid-column: 2 / -1; margin-top: -2px; padding-bottom: 2px; }
 
 @media (max-width: 1100px) {
   :root { --fs: 20px; --fs-lg: 28px; --fs-xl: 36px; }

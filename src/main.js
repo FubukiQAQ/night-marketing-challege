@@ -3,7 +3,7 @@ import { loadAssets } from './sprites.js';
 import { makeGame } from './core.js';
 import { renderSell, resetScene, SCENE } from './render.js';
 import { hud, renderStock, renderPrep, renderSellShell, updateSellStats,
-         renderSettle, renderMeta, toast } from './ui.js';
+         renderSettle, renderMeta, toast, keepScroll } from './ui.js';
 
 const SAVE_KEY = 'bushaoxin.v1';
 
@@ -237,14 +237,14 @@ function onClick(ev) {
   switch (act) {
     case 'buy': {
       const r = G.buy(+t.dataset.s, +t.dataset.i, +t.dataset.q);
-      if (!r.ok) toast(r.msg); else { hud(G); renderStock(G); }
+      if (!r.ok) toast(r.msg); else { hud(G); keepScroll(() => renderStock(G)); }
       break;
     }
     case 'buyDish': {
       const res = G.buyForDish(t.dataset.f, +t.dataset.n || 5);
       if (!res.ok) toast('没买齐：缺 ' + res.miss.join('、'));
       else toast(`已按 ${t.dataset.n || 5} 份备齐 ${G.FOOD[t.dataset.f].name} 的料`);
-      hud(G); renderStock(G);
+      hud(G); keepScroll(() => renderStock(G));
       break;
     }
     case 'toPrep': {
@@ -255,7 +255,7 @@ function onClick(ev) {
     case 'toggle': {
       const v = G.toggleMenu(t.dataset.f);
       if (v.issues.some((i) => i.level === 'error')) toast(v.issues.find((i) => i.level === 'error').msg);
-      hud(G); renderPrep(G); save();
+      hud(G); keepScroll(() => renderPrep(G)); save();
       break;
     }
     case 'prep': {
@@ -267,7 +267,7 @@ function onClick(ev) {
       const r = G.prep(f.id, n);
       if (!r.ok) toast(r.msg || '做不了');
       else toast(`备好 ${n} 份${f.name}（${r.minutes.toFixed(0)} 分钟）`);
-      hud(G); renderPrep(G); save();
+      hud(G); keepScroll(() => renderPrep(G)); save();
       break;
     }
     case 'toSell': {

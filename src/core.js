@@ -101,7 +101,7 @@ export function makeGame(DATA) {
     const f = FOOD[foodId];
     const miss = [];
     f.recipe.forEach((r) => {
-      let want = r.qty * servings - (G.s.inventory[r.ing] || 0);
+      let want = r.qty * servings;   // 每次点都"再买 N 份的料"，累加
       while (want > 0) {
         const off = G.offerFor(r.ing);
         if (!off) { miss.push(ING[r.ing].name); break; }

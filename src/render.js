@@ -148,17 +148,6 @@ export function renderSell(ctx, G, dt) {
     });
   }
 
-  // ---------- 上沿信息条
-  ctx.fillStyle = 'rgba(10,14,20,0.72)';
-  ctx.fillRect(0, 0, W, 18);
-  ctx.font = '9px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillStyle = '#8a99a8';
-  const left = Math.max(0, Math.round((G.B.sellTicks - (S ? S.tick : 0)) / 200));
-  ctx.fillText(`剩余 ${left}s`, 8, 12);
-  ctx.textAlign = 'right';
-  ctx.fillStyle = '#ffc93c';
-  ctx.fillText(`¥${S ? S.revenue.toFixed(0) : 0}`, W - 8, 12);
 }
 
 export const SCENE = { W, H };
