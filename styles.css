@@ -347,7 +347,12 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
 .reso.on { color: var(--accent); }
 
 /* 出摊 */
-#sellwrap { display: flex; flex-direction: column; gap: 14px; align-items: center; height: 100%; min-height: 0; }
+#sellwrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
 .sell-top {
   width: 100%;
   display: flex;
@@ -379,17 +384,19 @@ input[type='number']:focus { outline: none; border-color: rgba(255, 222, 0, 0.5)
   font-variant-numeric: tabular-nums;
 }
 .sell-rev b { font-size: var(--fs-xl); font-weight: normal; }
-#sellwrap canvas { flex: 1 1 auto; min-height: 0; }
+
 #sellcanvas {
-  height: 100%;
-  width: auto;
+  display: block;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--cv-w, 960px);
+  height: var(--cv-h, 540px);
   max-width: 100%;
-  min-height: 0;
-  aspect-ratio: 16 / 9;
-  object-fit: fill;
   image-rendering: pixelated;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 4px;
   background: #050506;
   box-shadow: 0 0 60px rgba(255, 222, 0, 0.05);
 }

@@ -108,7 +108,8 @@ python tools/check_text.py      # 扫一遍文本文件有没有编码乱码
 |---|---|
 | `?dev=play` | 端到端：用真实 DOM 点击走完 7 天 |
 | `?dev=menuflow` | 主菜单：开局 → 存档 → 继续 → 清档 |
-| `?dev=prep` / `?dev=sell2` / `?dev=settle` / `?dev=meta` | 直接跳到对应阶段 |
+| `?dev=prep` / `?dev=sell2` / `?dev=settle` / `?dev=meta` / `?dev=stock` | 直接跳到对应阶段 |
+| `?dev=probe&phase=sell` | 把各层容器实测尺寸写进 `document.title`，调版面时用 |
 
 ---
 
@@ -123,6 +124,7 @@ python tools/check_text.py      # 扫一遍文本文件有没有编码乱码
 | `v0.4` | 主菜单 + 本地存档（run/meta 分离、迁移、清档确认）、图标放大 |
 | `v0.5` | **HD 精细像素材质全套替换**（960×540 五层视差场景、82 餐品、126 食材、13 厨具、8 类顾客×5 态）+ 分场景 BGM |
 | `v0.5.1` | 人物放大 3 倍并重排版面；BGM 改为可选曲目的播放器（跟随阶段 / 手动锁定 / 音量） |
+| `v0.6` | UI/美术优化：修 canvas 拉伸、位图数字、出餐抛物线、摊主、9slice 像素面板、结算印章、标签四态、排队扩容、灯层分档 |
 
 ---
 

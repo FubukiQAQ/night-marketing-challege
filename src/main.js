@@ -3,7 +3,7 @@ import { loadAssets } from './sprites.js';
 import { makeGame, mulberry32 } from './core.js';
 import { loadSave, writeSave, clearSave, describeSave, formatTime } from './save.js';
 import * as Audio from './audio.js';
-import { renderSell, resetScene, SCENE } from './render.js';
+import { renderSell, resetScene, spawnFly, SCENE } from './render.js';
 import { hud, renderStock, renderPrep, renderSellShell, updateSellStats,
          renderSettle, renderMeta, renderMenu, toast, keepScroll } from './ui.js';
 
@@ -55,10 +55,12 @@ async function boot() {
 
   window.addEventListener('click', onClick);
   window.addEventListener('input', onChange);
+  window.addEventListener('resize', () => { if (G.s && G.s.phase === 'SELL') fitCanvas(); });
   Audio.installUnlock();
   Audio.loadTracks();
 
-  const dev = new URLSearchParams(location.search).get('dev');
+  const params = new URLSearchParams(location.search);
+  const dev = params.get('dev');
   if (dev === 'menuflow') {
     showMenu();
     try { document.title = await menuFlowTest(); }
@@ -72,7 +74,14 @@ async function boot() {
     } else {
       G.startRun(null);
     }
-    if (dev === 'play') {
+    if (dev === 'probe') {
+    if (params.get('phase') === 'sell') devAuto('sell2');
+    route();
+    fitCanvas();
+    await probeLayout();
+    return;
+  }
+  if (dev === 'play') {
       route();
       try { document.title = 'E2E ' + (await devPlay()); }
       catch (e) { document.title = 'E2E FAIL ' + e.message; }
@@ -290,6 +299,29 @@ async function menuFlowTest() {
   return 'MENU OK — ' + log.join(' | ');
 }
 
+
+/* ---------------------------------------------------------------- 尺寸探针（?dev=probe） */
+async function probeLayout() {
+  await new Promise((r) => setTimeout(r, 600));
+  const st = document.getElementById('stage');
+  const cv = document.getElementById('sellcanvas');
+  const wrap = document.getElementById('sellwrap');
+  const bar = document.getElementById('bar');
+  const hud = document.getElementById('hud');
+  const app = document.getElementById('app');
+  const top = document.querySelector('.sell-top');
+  const sb = document.querySelector('.sellbar');
+  const box = (e) => {
+    if (!e) return 'null';
+    const r = e.getBoundingClientRect();
+    return [Math.round(r.width) + 'x' + Math.round(r.height),
+      'ch=' + e.clientWidth + '/' + e.clientHeight].join(' ');
+  };
+  document.title = 'PROBE app=' + box(app) + ' hud=' + box(hud) + ' stage=' + box(st) +
+    ' wrap=' + box(wrap) + ' canvas=' + box(cv) + ' top=' + box(top) +
+    ' sb=' + box(sb) + ' bar=' + box(bar);
+}
+
 /* ---------------------------------------------------------------- 开发用自动推进 */
 function devAuto(mode) {
   if (mode === 'stock') return;            // 停在备货阶段，方便截图/调试
@@ -369,14 +401,46 @@ function route() {
   mountPlayer();
 }
 
+
+/** canvas 绝对居中：可用区域 = stage 内边距之内，减去上下两条 HUD 的高度 */
+const HUD_TOP = 56;
+const HUD_BOTTOM = 42;
+
+function fitCanvas() {
+  const cv = document.getElementById('sellcanvas');
+  const stage = document.getElementById('stage');
+  if (!cv || !stage) return;
+  const availW = Math.max(0, stage.clientWidth - 8);
+  const availH = Math.max(0, stage.clientHeight - HUD_TOP - HUD_BOTTOM);
+  if (availW < 64 || availH < 36) return;
+  const s = Math.min(availW / SCENE.W, availH / SCENE.H);
+  // 取 0.25 的整数倍，保证像素不出现"大小不一"
+  const scale = Math.max(0.25, Math.floor(s * 4) / 4);
+  const w = Math.round(SCENE.W * scale);
+  const h = Math.round(SCENE.H * scale);
+  if (cv.dataset.w !== String(w)) {
+    cv.dataset.w = w;
+    cv.style.setProperty('--cv-w', w + 'px');
+    cv.style.setProperty('--cv-h', h + 'px');
+  }
+}
+
 /* ---------------------------------------------------------------- 出摊 */
 function startSellView() {
   renderSellShell(G);
   if (!G.s.sell) G.startSell();
   resetScene();
+  window.__lastServed = 0;
   const cv = document.getElementById('sellcanvas');
   ctx = cv.getContext('2d');
   ctx.imageSmoothingEnabled = false;
+  requestAnimationFrame(fitCanvas);
+  if (!window.__cvObserver) {
+    window.__cvObserver = new ResizeObserver(() => fitCanvas());
+  }
+  window.__cvObserver.disconnect();
+  const wrapEl = document.getElementById('sellwrap');
+  if (wrapEl) window.__cvObserver.observe(wrapEl);
   lastTs = performance.now();
   tickAcc = 0;
   speed = 1;
@@ -396,8 +460,24 @@ function loop() {
     G.tick();
     tickAcc -= 1;
   }
+  // 成交时放一段餐品飞行动画
+  const S2 = G.s.sell;
+  if (S2) {
+    const served = S2.served || 0;
+    if (served > (window.__lastServed || 0)) {
+      const menuOn = G.s.menu.filter((m) => m.onMenu);
+      const pick = menuOn[(served - 1) % Math.max(1, menuOn.length)];
+      if (pick) {
+        const f = G.FOOD[pick.foodId];
+        const ui = G.s.utensils.indexOf(f.utensil);
+        spawnFly(f.sprite, f.tags[0], Math.max(0, ui));
+      }
+      window.__lastServed = served;
+    }
+  }
   renderSell(ctx, G, dt * speed);
   updateSellStats(G);
+  if ((window.__fitTick = (window.__fitTick || 0) + 1) % 20 === 0) fitCanvas();
   raf = requestAnimationFrame(loop);
 }
 
