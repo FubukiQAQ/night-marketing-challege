@@ -15,51 +15,6 @@ export function toast(msg) {
   setTimeout(() => d.remove(), 1800);
 }
 
-
-/** 位图数字：用 ui_digits_* 图集拼出数字串（比字体渲染锐利，且等宽不抖）
- *  图集字形实测布局（glyph 数 / 格宽）：
- *    16px → 14 格 × 16px = 224 宽
- *    24px → 14 格 × 24px = 336 宽
- *    32px → 14 格 × 32px = 448 宽
- *    48px → 14 格 × 48px = 672 宽
- *  顺序：0-9 + - / :  （中文没有的字符会被跳过）
- */
-const DIGIT_IDX = {
-  '0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
-  '+': 10, '-': 11, '/': 12, ':': 13,
-};
-const DIGIT_ATLAS = {
-  16: { x: 780, y: 216, w: 224, h: 16, cell: 16 },
-  24: { x: 442, y: 216, w: 336, h: 24, cell: 24 },
-  32: { x: 0, y: 182, w: 448, h: 32, cell: 32 },
-  48: { x: 0, y: 132, w: 672, h: 48, cell: 48 },
-};
-
-/**
- * @param {string} str   要显示的数字串
- * @param {number} size  16 / 24 / 32 / 48（图集原生尺寸）
- * @param {number} scale 显示倍数（整数，默认 1）
- */
-export function digits(str, size = 24, scale = 1) {
-  const a = DIGIT_ATLAS[size] || DIGIT_ATLAS[24];
-  const cell = a.cell;
-  const out = [];
-  for (const ch of String(str)) {
-    if (!(ch in DIGIT_IDX)) continue;
-    const idx = DIGIT_IDX[ch];
-    const ox = -(a.x + idx * cell) * scale;
-    const oy = -a.y * scale;
-    out.push('<span class="dg" style="' +
-      'width:' + cell * scale + 'px;height:' + cell * scale + 'px;' +
-      'background-image:url(assets/packed/ui.png);' +
-      'background-position:' + ox + 'px ' + oy + 'px;' +
-      'background-size:1024px ' + 1024 * scale + 'px;' +
-      'background-repeat:no-repeat;image-rendering:pixelated;' +
-      '"></span>');
-  }
-  return '<span class="dgrow">' + out.join('') + '</span>';
-}
-
 const money = (n) => {
   const v = Math.abs(n);
   const body = v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString('zh-CN');
@@ -86,7 +41,7 @@ export function hud(G) {
     const p = Math.max(0, Math.min(1, s.minutesLeft / total));
     bar = `<div class="hud-timer">${icon('ui/ui_dot_full.png', 18)}
       <div class="bar ${p < 0.25 ? 'warn' : ''}"><i style="width:${p * 100}%"></i></div>
-      <span class="bar-dg">${digits(Math.round(s.minutesLeft), 16, 1)}</span><span class="unit">分</span></div>`;
+      <span>${Math.round(s.minutesLeft)} 分</span></div>`;
   } else if (s.phase === 'SELL' && s.sell) {
     const p = s.sell.tick / G.B.sellTicks;
     bar = `<div class="hud-timer">${icon('ui/ui_dot_full.png', 18)}
@@ -95,7 +50,7 @@ export function hud(G) {
   }
   el('hud').innerHTML = `
     <span class="hud-day">第 ${s.day} / ${G.B.dayCount} 天</span>
-    <span class="hud-cash ${s.cash < 0 ? 'neg' : ''}">${icon('ui/ui_star_full.png', 20)}<span class="cash-dg">${digits(Math.abs(Math.round(s.cash)), 32, 1)}</span></span>
+    <span class="hud-cash ${s.cash < 0 ? 'neg' : ''}">${icon('ui/ui_star_full.png', 18)} ${money(s.cash)}</span>
     <span class="hud-phase">${phaseName}</span>
     ${bar}
     <span class="hud-spacer"></span>
@@ -309,7 +264,7 @@ export function renderPrep(G) {
     const dots = Array.from({ length: Math.min(tr.needMenu, 6) }, (_, i) =>
       `<span class="dot-sq ${i < Math.min(cnt, tr.needMenu) ? 'on' : ''}"></span>`).join('');
     return `<div class="trait ${on ? 'on' : ''} ${near ? 'near' : ''}">
-      <span>${icon(trStateIcon(tr, cnt, X), 32)}</span>
+      <span>${icon('ico/' + tr.icon + '.png', 28)}</span>
       <span>
         <div class="trait-row2">
           <span class="trait-name">${tr.name}</span>
@@ -393,16 +348,6 @@ function menuNeedRows(G) {
     }).join('') + '<div class="hint mt8">想多卖几份就按「每份需 × 预计份数」进货。</div>';
 }
 
-
-/** 标签图标四态：已激活=highlight，即将掉档=fragile，未激活=grayed，其余 normal */
-function trStateIcon(tr, cnt, X) {
-  let state = 'normal';
-  if (cnt >= tr.needMenu) state = 'highlight';
-  else if (cnt === tr.needMenu - 1) state = 'fragile';   // 差一款，临近激活
-  else state = 'grayed';
-  return 'ico/tag_' + tr.tag + '_' + state + '.png';
-}
-
 function tagColor(tagId) {
   const map = {
     fast: '#f2b33d', staple: '#e8d9a8', spicy: '#e0432b', fried: '#c98b3f',
@@ -443,25 +388,15 @@ export function updateSellStats(G) {
     const tier = G.tierOf(tr);
     return `<span class="pill">${tr.name}<b> X${X}</b>${tier ? ' · ' + tier.tier + '档' : ''}</span>`;
   }).join('');
-  const leftEl = document.getElementById('sellleft');
-  if (leftEl) leftEl.innerHTML = digits(Math.max(0, Math.round((G.B.sellTicks - S.tick) / 200)), 48, 1);
-  const revEl = document.getElementById('sellrev');
-  if (revEl) revEl.innerHTML = digits(Math.round(S.revenue), 48, 1);
+  const leftEl = el('sellleft');
+  if (leftEl) leftEl.textContent = Math.max(0, Math.round((G.B.sellTicks - S.tick) / 200));
+  const revEl = el('sellrev');
+  if (revEl) revEl.textContent = S.revenue.toFixed(0);
   dom.innerHTML = `
     <span class="pill">${icon('ui/ui_trend_up.png', 18)} 卖出 <b>${S.served}</b></span>
     <span class="pill">${icon('ui/ui_trend_down.png', 18)} 流失 <b>${S.lost}</b></span>
     <span class="pill">${icon('ui/ui_trend_down.png', 18)} 客诉 <b>${Math.round(S.complaints)}</b></span>
     ${chips || '<span class="muted tiny">今天没有词条激活 —— 明天试试把同属性的菜多上几款</span>'}`;
-}
-
-
-/** 按评分选印章素材：>=85 优 / >=70 良 / >=50 普 / >=35 次 / 更差 差 */
-function stampFor(score) {
-  if (score >= 85) return 'ui/ui_stamp_excellent.png';
-  if (score >= 70) return 'ui/ui_stamp_good.png';
-  if (score >= 50) return 'ui/ui_stamp_normal.png';
-  if (score >= 35) return 'ui/ui_stamp_poor.png';
-  return 'ui/ui_stamp_bad.png';
 }
 
 /* ---------------------------------------------------------------- 结算 */
@@ -479,13 +414,12 @@ export function renderSettle(G) {
   el('stage').innerHTML = `
     <div class="panel">
       <h3 class="panel-title">${icon('ui/ui_progress_fill_warm.png', 20)} 第 ${st.day} 天 · 打烊结算</h3>
-      <div class="stamp-wrap"><img class="stamp" src="${stampFor(st.score)}" alt="评分印章" /></div>
       <div class="settle-grid">
-        <div class="kpi"><div class="k">营业额</div><div class="v acc">${digits(Math.round(st.revenue), 32, 1)}</div>
+        <div class="kpi"><div class="k">营业额</div><div class="v acc">${money(st.revenue)}</div>
           <div class="tiny muted">目标 ${money(st.target)}</div></div>
         <div class="kpi"><div class="k">卖出 / 流失</div><div class="v">${st.served} / ${st.lost}</div></div>
         <div class="kpi"><div class="k">满意度</div><div class="v">${st.sat.toFixed(2)}</div></div>
-        <div class="kpi"><div class="k">评分</div><div class="v acc">${digits(st.score.toFixed(0), 48, 1)}</div>
+        <div class="kpi"><div class="k">评分</div><div class="v acc">${st.score.toFixed(0)}</div>
           <div class="tiny muted">${st.score > 70 ? '好评如潮' : st.score > 55 ? '生意不错' : st.score > 40 ? '平平淡淡' : '有点冷清'}</div></div>
       </div>
       <div class="hint mt8">获得经验 ${st.exp} · 口碑 ${Math.round(G.s.rep)}</div>

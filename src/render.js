@@ -6,26 +6,19 @@ const W = 960, H = 540;
 /** 版面常量：HD 场景图层里摊位/台面/地面的大致位置。
  *  这些数是按 scene_night_near.png 的亮度分布估的，肉眼校对后改这里即可。 */
 export const LAYOUT = {
-  // 场景实测锚点（tools/analyze_layout.py）：台面边缘 y≈313，地面 y≈465
-  // 人物 3x：48×64 → 144×192
-  counterY: 344,
-  utensil: 120,
-  utensilX0: 48,
-  utensilStep: 130,
-  utensilMax: 4,
-  groundY: 506,
-  customerW: 144,
+  // 场景实测锚点（tools/analyze_layout.py）：台面边缘 y≈313，地面 y≈465，暖光中心 x≈450
+  // 人物放大 3x（48×64 → 144×192）后重排：厨具占左中，顾客占右侧，互不重叠
+  counterY: 344,      // 台面基线（厨具底边）
+  utensil: 120,       // 厨具绘制尺寸（源图 64 → 约 1.9x，与人物比例协调）
+  utensilX0: 48,      // 第一件厨具 x
+  utensilStep: 130,   // 厨具间距
+  utensilMax: 4,      // 台面上最多同时画 4 件（再多画会挤到顾客区）
+  groundY: 506,       // 顾客脚底线
+  customerW: 144,     // 顾客 48×64 → 3x
   customerH: 192,
-  queueX0: 556,
-  queueStep: 100,
-  maxQueue: 6,
-  // 摊主：站在台面后偏左，稍微遮挡厨具底部
-  playerW: 128,
-  playerH: 160,
-  playerX: 96,
-  playerY: 158,
-  // 出餐动画
-  flyFrames: 22,
+  queueX0: 566,       // 队列起始 x
+  queueStep: 116,     // 队列间距（略小于人物宽度，形成自然的拥挤感）
+  maxQueue: 3,        // 同屏最多 3 位（再多会越界）
 };
 
 
@@ -43,34 +36,8 @@ function glow(ctx, cx, cy, r, rgb, alpha) {
 
 let TYPES = null;
 let t = 0;
-let playerFrame = 'idle';
-/** 飞行中的餐品：{sprite, x0,y0, x1,y1, age, tag} */
-let flying = [];
-let lastLayersBoost = 0;
 
-export function resetScene() {
-  t = 0;
-  flying = [];
-  playerFrame = 'idle';
-  lastLayersBoost = 0;
-}
-
-/** 由 main 在每次成交时调用，播一段"菜飞过去" */
-export function spawnFly(sprite, tag, fromIdx) {
-  const ux = LAYOUT.utensilX0 + (fromIdx || 0) * LAYOUT.utensilStep;
-  const idx = flying.length % LAYOUT.maxQueue;
-  flying.push({
-    sprite: sprite,
-    tag: tag || 'fast',
-    x0: ux + LAYOUT.utensil / 2,
-    y0: LAYOUT.counterY - LAYOUT.utensil * 0.4,
-    x1: LAYOUT.queueX0 + idx * LAYOUT.queueStep + LAYOUT.customerW / 2,
-    y1: LAYOUT.groundY - LAYOUT.customerH * 0.55,
-    age: 0,
-  });
-}
-
-export function setPlayerFrame(f) { playerFrame = f; }
+export function resetScene() { t = 0; }
 
 function sceneKey(name) {
   return 'scene/scene_' + name + '.png';
@@ -90,19 +57,6 @@ export function renderSell(ctx, G, dt) {
   sceneDraw(ctx, 'scene_night_mid', 0, 0, W, H);
   sceneDraw(ctx, 'scene_night_ground', 0, 0, W, H);
   sceneDraw(ctx, 'scene_night_near', 0, 0, W, H);
-
-  // ---------- 摊主（站在台面后，先画，被厨具和前景遮住下半身）
-  if (S) {
-    const busy = Object.keys(S.jobs).some((k) => S.jobs[k] && S.jobs[k].length > 0);
-    const frame = busy ? 'cook' : (playerFrame || 'idle');
-    draw(ctx, 'char/chr_player_' + frame + '.png',
-      LAYOUT.playerX, LAYOUT.playerY, LAYOUT.playerW, LAYOUT.playerH);
-    // 摊主身上的一点暖光
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    glow(ctx, LAYOUT.playerX + LAYOUT.playerW / 2, LAYOUT.playerY + 40, 90, '255,190,120', 0.10);
-    ctx.restore();
-  }
 
   // ---------- 厨具
   const uids = s.utensils.slice(0, LAYOUT.utensilMax);
@@ -183,49 +137,18 @@ export function renderSell(ctx, G, dt) {
     });
   }
 
-  // ---------- 出餐抛物线：餐品从厨具飞向顾客
-  flying = flying.filter((f) => f.age < LAYOUT.flyFrames);
-  flying.forEach((f) => {
-    f.age += 1;
-    const k = f.age / LAYOUT.flyFrames;
-    const x = f.x0 + (f.x1 - f.x0) * k;
-    // 抛物线：起点高、中途抬升、落点略高
-    const arc = Math.sin(k * Math.PI) * 70;
-    const y = f.y0 + (f.y1 - f.y0) * k - arc;
-    const size = 52;
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    glow(ctx, x, y + size / 2, 26, '255,220,150', 0.22 * (1 - k * 0.4));
-    ctx.restore();
-    draw(ctx, f.sprite, x - size / 2, y, size, size, 1 - k * 0.15);
-    // 拖尾
-    if (k < 0.7) {
-      ctx.save();
-      ctx.globalAlpha = 0.25 * (1 - k);
-      draw(ctx, f.sprite, x - size * 0.9, y + 6, size * 0.5, size * 0.5);
-      ctx.restore();
-    }
-  });
-
   // ---------- 灯光层（加法叠加，压在所有东西上面）
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  // 层数分 3 档：灯层本身逐渐加亮，整条街跟着亮起来
-  const layersTotal = Object.values(s.layers || {}).reduce((a, b) => a + b, 0);
-  const tier = layersTotal >= 60 ? 3 : layersTotal >= 20 ? 2 : 1;
-  const lightAlpha = [0, 0.55, 0.78, 1.0][tier];
-  ctx.globalAlpha = lightAlpha;
   sceneDraw(ctx, 'scene_night_light', 0, 0, W, H);
-  // 基础色温叠加（档位越高越暖越亮）
-  const boost = [0, 0.05, 0.10, 0.16][tier];
-  if (boost > 0) {
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = 'rgba(255, 205, 120, ' + boost.toFixed(3) + ')';
+  // 层数越高，整条街越亮
+  const layersTotal = Object.values(s.layers || {}).reduce((a, b) => a + b, 0);
+  const boost = Math.min(0.42, layersTotal / 420);
+  if (boost > 0.01) {
+    ctx.fillStyle = 'rgba(255, 205, 120, ' + (boost * 0.18).toFixed(3) + ')';
     ctx.fillRect(0, 0, W, H);
   }
   ctx.restore();
-  // 平滑过渡（避免切档时突兀）
-  lastLayersBoost += (boost - lastLayersBoost) * Math.min(1, dt * 4);
 }
 
 export const SCENE = { W, H };
