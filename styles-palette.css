@@ -121,3 +121,14 @@
 
 /* ---------- è®©æš–è‰²å¼ºè°ƒåœ¨çº¸é¢ä¸Šä¹Ÿæœ‰è¶³å¤Ÿå¯¹æ¯” ---------- */
 .ok, .gold { color: #8A5A18; }
+
+/* ÊôĞÔ±êÇ©ÓÃµÄÊÇ inline color£¨ÁÁÉ«Ïµ£©£¬ÔÚÃ×Ö½ÉÏ»á·¢°×¿´²»Çå ¡ª¡ª Ñ¹°µÒ»µµ */
+.food .food-name .tiny,
+.dish-row .dish-tags,
+.sup .tiny {
+  filter: brightness(0.58) saturate(1.5);
+}
+/* µ«"È±³ø¾ß"ÕâÀà¾¯¸æÒª±£³Öºì */
+.food .food-name .warn {
+  filter: none;
+}

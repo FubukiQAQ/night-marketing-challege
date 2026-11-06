@@ -1,0 +1,80 @@
+/* ============================================================
+   P0-3b  把「菜谱速查」的条目也统一成纸面卡片
+   之前 .sup / .food 是纸面，.dish-row 却是透明的深底白字，
+   同一屏里两种材质，视觉语言不统一
+   ============================================================ */
+
+.dish-row {
+  border: 12px solid transparent;
+  border-image: url(assets/ui9/ui_panel_light_normal_9slice.png) 16 fill stretch;
+  border-radius: 0;
+  background: none;
+  padding: 4px 8px;
+  color: var(--ink-on-paper);
+}
+
+.dish-row .dish-name {
+  color: var(--ink-on-paper);
+}
+.dish-row .dish-recipe {
+  color: var(--ink-soft);
+}
+.dish-row .muted {
+  color: var(--ink-dim);
+}
+.dish-row .dish-tags {
+  color: var(--ink-soft);
+  filter: brightness(0.8);
+}
+.dish-row .lack {
+  color: var(--alert);
+}
+
+/* 纸面上的小按钮统一走描边风格 */
+.dish-row button.small,
+.food button.small,
+.sup button.small {
+  background: var(--paper-hi);
+  border: 1px solid var(--paper-edge);
+  border-image: none;
+  border-radius: 2px;
+  color: var(--ink-on-paper);
+  padding: 4px 9px;
+}
+.dish-row button.small:hover,
+.food button.small:hover,
+.sup button.small:hover {
+  background: #FFE9B8;
+  border-color: var(--burnt);
+  filter: none;
+}
+.dish-row button.small:disabled {
+  background: #DCD3BC;
+  border-color: var(--paper-lo);
+  color: #9A8F79;
+  opacity: 1;
+  filter: none;
+}
+
+/* 纸面卡片内的数字输入 */
+.food input[type='number'] {
+  background: var(--paper-hi);
+  color: var(--ink-on-paper);
+  border: 1px solid var(--paper-edge);
+  border-radius: 2px;
+}
+
+/* 未营业的供应商：整体压低饱和，但仍能看出是纸面 */
+.sup.closed {
+  filter: grayscale(0.9) brightness(0.92);
+  opacity: 0.55;
+}
+
+/* 面板标题在深色外框上偏暖金，和纸面卡片区分 */
+.panel-title {
+  color: #C9B98F;
+}
+.panel .hint,
+.panel .muted {
+  color: #9C9484;
+}

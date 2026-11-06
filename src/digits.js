@@ -1,12 +1,14 @@
 // digits.js —— 位图数字渲染
-// 关键：图集真实尺寸从 atlas.json 读，不写死（v0.6 就是写死成 1024×1024 导致全崩）
+// 字形表实测：16 格 = 0 1 2 3 4 5 6 7 8 9 + - ¥ : / %
+// 格宽 = 图集宽 / 16（约 size×0.875），不是 size 本身
+// 图集真实像素尺寸从 atlas.json 取，绝不写死（v0.6 写死 1024×1024 导致全崩）
 import { ASSETS } from './sprites.js';
 
-const DIGIT_IDX = {
-  0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9,
-  '+': 10, '-': 11, '/': 12, ':': 13,
-};
+const GLYPHS = '0123456789+-¥:/%';
+const IDX = {};
+for (let i = 0; i < GLYPHS.length; i++) IDX[GLYPHS[i]] = i;
 
+const COLS = 16;
 let CACHE = null;
 
 /** 从 atlas 里取 4 档数字的几何信息（只算一次） */
@@ -15,8 +17,7 @@ function geo() {
   const out = {};
   const frames = (ASSETS && ASSETS.frames) || {};
   for (const size of [16, 24, 32, 48]) {
-    const key = 'ui/ui_digits_' + size + '.png';
-    const f = frames[key];
+    const f = frames['ui/ui_digits_' + size + '.png'];
     if (!f) continue;
     out[size] = {
       png: f.png,
@@ -24,8 +25,7 @@ function geo() {
       y: f.y,
       w: f.w,
       h: f.h,
-      cell: size,                       // 每格就是 size×size
-      cols: Math.round(f.w / size),     // 一般是 14
+      cell: f.w / COLS,   // 实测 14 / 21 / 28 / 42
     };
   }
   CACHE = out;
@@ -39,10 +39,15 @@ function pngSize(png) {
   return { w: im.width, h: im.height };
 }
 
+/** 去掉千分位逗号，但保留 ¥ + - : / % 这些图集里有的字符 */
+function clean(value) {
+  return String(value).replace(/,/g, '');
+}
+
 /**
  * 渲染一串位图数字
- * @param {string|number} value 值
- * @param {object} opt {size:16|24|32|48, scale:number, prefix:'', suffix:''}
+ * @param {string|number} value
+ * @param {object} opt {size:16|24|32|48, scale:number, prefix:string, suffix:string}
  */
 export function digits(value, opt) {
   const o = opt || {};
@@ -54,19 +59,16 @@ export function digits(value, opt) {
   const ps = pngSize(a.png);
   if (!ps) return '<span class="dg-fallback">' + value + '</span>';
 
-  const text = String(value);
+  const text = clean(value);
+  const cw = a.cell * scale;
   const parts = [];
   for (const ch of text) {
-    if (!(ch in DIGIT_IDX)) {
-      // 逗号、货币符号这类不支持的字符，直接跳过（不显示乱格）
-      continue;
-    }
-    const idx = DIGIT_IDX[ch];
-    const bgX = -(a.x + idx * a.cell) * scale;
+    if (!(ch in IDX)) continue;          // 图集里没有的字符直接跳过
+    const bgX = -(a.x + IDX[ch] * a.cell) * scale;
     const bgY = -a.y * scale;
     parts.push(
       '<span class="dg" style="' +
-      'width:' + a.cell * scale + 'px;height:' + a.h * scale + 'px;' +
+      'width:' + cw + 'px;height:' + a.h * scale + 'px;' +
       'background-image:url(' + a.png + ');' +
       'background-position:' + bgX + 'px ' + bgY + 'px;' +
       'background-size:' + (ps.w * scale) + 'px ' + (ps.h * scale) + 'px;' +
@@ -78,7 +80,7 @@ export function digits(value, opt) {
   return '<span class="dgrow">' + pre + parts.join('') + suf + '</span>';
 }
 
-/** 千分位 */
+/** 千分位（会插入逗号，digits() 内部会去掉）。保留负号：图集里有 '-' 字形 */
 export function num(n) {
-  return Math.round(Math.abs(n)).toLocaleString('en-US');
+  return Math.round(n).toLocaleString('en-US');
 }

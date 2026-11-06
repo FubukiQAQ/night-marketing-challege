@@ -33,3 +33,8 @@
 /* é¡¶æ ç°é‡‘ç¨å¾®æ”¶ä¸€ç‚¹ï¼Œé¿å…å å¤ªå®½ */
 .hud-cash { display: inline-flex; align-items: center; }
 .hud-cash .dg { transform: scale(1); }
+
+/* Î»Í¼Êı×ÖÊÇÍ¼Æ¬£¬CSS color È¾²»ÉÏÈ¥ ¡ª¡ª ¸ºÊıÓÃÂË¾µÈ¾ºì */
+.hud-cash.neg .dgrow {
+  filter: sepia(1) saturate(9) hue-rotate(-28deg) brightness(1.02);
+}

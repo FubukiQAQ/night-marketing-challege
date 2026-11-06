@@ -2,7 +2,7 @@
 import { icon } from './sprites.js';
 import { formatTime } from './save.js';
 import * as Audio from './audio.js';
-import { digits, num } from './digits.js';
+import { digits, num } from './digits.js?v=3';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (id) => document.getElementById(id);
