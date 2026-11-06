@@ -62,6 +62,66 @@ export function hud(G) {
 }
 
 
+
+/* ---------------------------------------------------------------- 叙事文案 */
+/** story.json 里取一段；缺失时返回空，绝不报错 */
+function ST(G) {
+  return (G && G.DATA && G.DATA.story) || null;
+}
+
+/** 当天的开场白 */
+export function dayIntro(G) {
+  const st = ST(G);
+  if (!st || !st.dayIntro) return null;
+  return st.dayIntro.find((d) => d.day === G.s.day) || null;
+}
+
+/** 按评分挑档位：excellent / good / normal / poor / bad */
+export function gradeOf(score) {
+  if (score >= 85) return 'excellent';
+  if (score >= 70) return 'good';
+  if (score >= 50) return 'normal';
+  if (score >= 35) return 'poor';
+  return 'bad';
+}
+
+/** 结算那句评语（同一天同一档只变一次，避免抖动） */
+export function settleLine(G, score) {
+  const st = ST(G);
+  if (!st || !st.settleGrade) return null;
+  const g = st.settleGrade[gradeOf(score)];
+  if (!g || !g.lines || !g.lines.length) return null;
+  const pick = g.lines[(G.s.day || 0) % g.lines.length];
+  return { title: g.title, text: pick };
+}
+
+/** 结局文案：按七天的评分总和挑档位 */
+export function endingOf(G) {
+  const st = ST(G);
+  if (!st || !st.ending) return null;
+  const hist = (G.s.history || []);
+  const total = hist.length
+    ? hist.reduce((a, h) => a + (h.score || 0), 0)
+    : (G.s.lastScore || 0) * 7;
+  const key = total >= 520 ? 'great' : total >= 370 ? 'ok' : 'weak';
+  return st.ending[key] || null;
+}
+
+
+/** 词条的氛围句（story.json 里预写，按 id 取） */
+export function traitFlavor(G, id) {
+  const st = ST(G);
+  if (!st || !st.traitsFlavor) return '';
+  return st.traitsFlavor[id] || '';
+}
+
+/** 顾客小传 */
+export function customerBio(G, type) {
+  const st = ST(G);
+  if (!st || !st.customers) return null;
+  return st.customers[type] || null;
+}
+
 /* ---------------------------------------------------------------- 主菜单 */
 const HELP = [
   ['目标', '七天一期。把一个小摊子做成这条街最亮的那个。'],
@@ -93,10 +153,12 @@ export function renderMenu(o) {
 
   const saveLine = d ? `第 ${d.day} / 7 天 · ${money(d.cash)}` : '还没有存档';
 
+  const open = o.opening;
   el('stage').innerHTML = `<div class="menu">
-    <div class="menu-kicker">七天 · 一个新摊位</div>
+    <div class="menu-kicker">${open ? open.sub : '七天 · 一个新摊位'}</div>
     <h1 class="menu-title">不烧心<br /><span>夜市挑战</span></h1>
     <p class="menu-sub">备货 → 备餐 → 出摊 60 秒。词条层数不封顶，摊子越做越亮。</p>
+    ${open ? `<blockquote class="menu-prologue">${open.lines.map((l) => `<span>${l}</span>`).join('')}</blockquote>` : ''}
 
     <div class="menu-actions">
       ${d ? `<button class="primary big" data-act="continue">继续 · ${saveLine}</button>` : ''}
@@ -282,6 +344,7 @@ export function renderStock(G) {
 /* ---------------------------------------------------------------- 备餐 */
 export function renderPrep(G) {
   const s = G.s;
+  const intro = dayIntro(G);
   const act = G.activeTraits();
   const mods = G.effects();
   const avail = G.availableFoods();
@@ -408,6 +471,7 @@ export function renderPrep(G) {
   el('stage').innerHTML = `<div class="cols prep-cols">
     <div class="col-main">
       <div class="panel"><h3 class="panel-title">${icon('ui/ui_trend_up.png', 18)} 餐品库（点"上架"加入今日菜单）</h3>
+        ${intro ? `<div class="day-note"><b>第 ${s.day} 天 · ${intro.title}</b><span>${intro.text}</span></div>` : ''}
         <div class="food-list">${foodRows}</div>
       </div>
     </div>
@@ -550,6 +614,14 @@ export function updateSellStats(G) {
 /* ---------------------------------------------------------------- 结算 */
 export function renderSettle(G) {
   const st = G.s.lastSettle;
+  const line = settleLine(G, st.score);
+  // 今晚点亮的词条氛围句
+  const active = G.activeTraits();
+  const flavors = Object.keys(active).map((id) => {
+    const tr = G.DATA.traits.traits.find((x) => x.id === id);
+    const text = traitFlavor(G, id);
+    return tr && text ? { name: tr.name, text } : null;
+  }).filter(Boolean).slice(0, 3);
   const all = G.bonusPool();
   const pool = [];
   const used = new Set();
@@ -568,8 +640,12 @@ export function renderSettle(G) {
         <div class="kpi"><div class="k">卖出 / 流失</div><div class="v">${st.served} / ${st.lost}</div></div>
         <div class="kpi"><div class="k">满意度</div><div class="v">${st.sat.toFixed(2)}</div></div>
         <div class="kpi"><div class="k">评分</div><div class="v acc">${st.score.toFixed(0)}</div>
-          <div class="tiny muted">${st.score > 70 ? '好评如潮' : st.score > 55 ? '生意不错' : st.score > 40 ? '平平淡淡' : '有点冷清'}</div></div>
+          <div class="tiny muted">${line ? line.title : ''}</div></div>
       </div>
+      ${line ? `<blockquote class="settle-quote">${line.text}</blockquote>` : ''}
+      ${flavors.length ? `<div class="flavor-list">
+        ${flavors.map((f) => `<div class="flavor"><span class="flavor-name">${f.name}</span><span class="flavor-text">${f.text}</span></div>`).join('')}
+      </div>` : ''}
       <div class="hint mt8">获得经验 ${st.exp} · 口碑 ${Math.round(G.s.rep)}</div>
     </div>
     <div class="panel mt8">
@@ -593,9 +669,14 @@ export function renderMeta(G) {
       <div class="hint">${desc}</div>
       <button class="small mt8" data-act="skill" data-b="${id}" ${pts <= 0 || s.skills[id] >= 3 ? 'disabled' : ''}>升级（1 点）</button>
     </div>`;
+  const end = endingOf(G);
   el('stage').innerHTML = `
     <div class="panel">
       <h3 class="panel-title">${icon('ui/ui_star_full.png', 20)} 第 ${s.run} 轮 · 7 天结束</h3>
+      ${end ? `<div class="ending">
+        <div class="ending-title">${end.title}</div>
+        <blockquote class="ending-text">${end.text}</blockquote>
+      </div>` : ''}
       <div class="settle-grid">
         ${s.history.map((h) => `<div class="kpi"><div class="k">第 ${h.day} 天</div>
           <div class="v">${h.score.toFixed(0)}</div><div class="tiny muted">${money(h.revenue)}</div></div>`).join('')}

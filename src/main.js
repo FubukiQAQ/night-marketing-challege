@@ -44,12 +44,13 @@ async function loadJSON(p) {
 }
 
 async function boot() {
-  const [tags, traits, foods, ingredients, utensils, balance] = await Promise.all([
+  const [tags, traits, foods, ingredients, utensils, balance, story] = await Promise.all([
     loadJSON('src/data/tags.json'), loadJSON('src/data/traits.json'),
     loadJSON('src/data/foods.json'), loadJSON('src/data/ingredients.json'),
     loadJSON('src/data/utensils.json'), loadJSON('src/data/balance.json'),
+    loadJSON('src/data/story.json').catch(() => null),
   ]);
-  DATA = { tags, traits, foods, ingredients, utensils, balance };
+  DATA = { tags, traits, foods, ingredients, utensils, balance, story };
   await loadAssets();
 
   G = makeGame(DATA);
@@ -166,6 +167,7 @@ function showMenu() {
     help: menuOpts.help,
     savedAt: pending ? pending.savedAt : 0,
     layerTotal,
+    opening: (DATA && DATA.story) ? DATA.story.opening : null,
   });
   mountPlayer();
 }
