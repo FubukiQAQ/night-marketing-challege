@@ -372,6 +372,15 @@ function devAuto(mode) {
     if (off) G.buy(off.si, off.ii, 30);
   });
   G.finishStock();
+
+  // 造一个「已有层数 + 已上架」的备餐局面，用来验证词条树激活态
+  if (mode === 'prepLayers') {
+    G.s.layers = { fastest: 14, cheers: 22, sizzle: 6, spicy: 9, full: 4 };
+    ['f_starch_sausage', 'f_pepper_sausage', 'f_chicken_steak', 'f_fries', 'f_cola']
+      .forEach((id) => { if (G.FOOD[id]) G.toggleMenu(id); });
+    return;
+  }
+
   if (mode === 'prep') return;
   if (mode === 'settle' || mode === 'meta') {
     const playDay = () => {

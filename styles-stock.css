@@ -238,27 +238,24 @@
   .shelf { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
 }
 
-/* ×óÀ¸£º»õ¼Ü + ¿â´æÉÏÏÂÅÅ²¼£¬ÌîÂú¸ß¶È */
+/* 
+/* å·¦æ ï¼šè´§æ¶ + åº“å­˜ä¸Šä¸‹æ’å¸ƒï¼Œå¡«æ»¡é«˜åº¦ */
 .stock-main {
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-height: 0;
 }
-.stock-main .stock-shelf-panel { flex: 1.45 1 0; }
-.stock-main .stock-inv-panel { flex: 1 1 0; }
+.stock-main .stock-shelf-panel { flex: 2.4 1 0; }
+.stock-main .stock-inv-panel { flex: 1 1 0; max-height: 30%; min-height: 132px; }
 .stock-inv-panel { display: flex; flex-direction: column; min-height: 0; }
 .stock-inv-panel .scroll { flex: 1 1 auto; min-height: 0; }
 .stock-inv-panel .item { padding: 2px 0; }
 
-/* ¹ºÎï³µÓÒ²à°´Å¥Áô³öºôÎü£¬±ÜÃâÌù±ß */
+/* è´­ç‰©è½¦å³ä¾§æŒ‰é’®ç•™å‡ºå‘¼å¸ï¼Œé¿å…è´´è¾¹ */
 .cart > button { margin-left: 2px; }
 .cart-total { min-width: 92px; text-align: right; }
 
-/* ·ÀÖ¹¸ñ×Ó±»Ñ¹Ëõµ¼ÖÂ²ËÃûÏûÊ§ */
+/* é˜²æ­¢æ ¼å­è¢«å‹ç¼©å¯¼è‡´èœåæ¶ˆå¤± */
 .shelf { grid-auto-rows: max-content; }
 .tile { min-height: 88px; justify-content: center; }
-
-/* ¿â´æ³£³£ÊÇ¿ÕµÄ£¬±ğÈÃËüÕ¼Ì«¶à¸ß¶È£¬°Ñ¿Õ¼äÁô¸ø»õ¼Ü */
-.stock-main .stock-shelf-panel { flex: 2.4 1 0; }
-.stock-main .stock-inv-panel { flex: 1 1 0; max-height: 30%; min-height: 132px; }

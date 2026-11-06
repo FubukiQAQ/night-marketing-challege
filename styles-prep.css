@@ -1,0 +1,174 @@
+/* ============================================================
+   P1-2  词条树
+   标签（上架什么）→ 词条（得到什么）→ 档位进度
+   ============================================================ */
+
+.prep-trait-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.tnode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-right: 2px;
+}
+
+.tnode {
+  border: 12px solid transparent;
+  border-image: url(assets/ui9/ui_panel_light_normal_9slice.png) 16 fill stretch;
+  background: none;
+  padding: 2px 6px 6px;
+  color: var(--ink-on-paper);
+}
+.tnode.near {
+  box-shadow: inset 0 0 0 2px #C0894A;
+}
+.tnode.on {
+  box-shadow: inset 0 0 0 2px #D87228;
+}
+
+/* --- 第一层：标签 --- */
+.tnode-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.3;
+}
+.tnode-tagico { line-height: 0; flex: 0 0 auto; }
+.tnode-tag {
+  font-size: 14px;
+  color: var(--ink-on-paper);
+  flex: 0 0 auto;
+}
+.tnode-cnt {
+  font-size: 12px;
+  color: var(--ink-soft);
+  flex: 1 1 auto;
+}
+.tnode-x {
+  font-size: 12px;
+  color: #8A5A18;
+  flex: 0 0 auto;
+}
+
+/* --- 第二层：词条 --- */
+.tnode-branch {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 6px;
+  line-height: 1.4;
+}
+.tnode-line {
+  color: var(--ink-dim);
+  font-size: 13px;
+  flex: 0 0 auto;
+}
+.tnode-ico {
+  line-height: 0;
+  flex: 0 0 auto;
+  filter: brightness(0.9);
+}
+.tnode-name {
+  font-size: 13px;
+  color: var(--ink-on-paper);
+  flex: 0 0 auto;
+}
+.tnode-tier {
+  font-size: 12px;
+  color: #8A5A18;
+  padding: 0 6px;
+  border: 1px solid var(--burnt);
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+.tnode-lock {
+  font-size: 12px;
+  color: var(--alert);
+  flex: 0 0 auto;
+}
+.tnode.near .tnode-lock { font-weight: normal; }
+
+/* --- 已上架的菜 --- */
+.tnode-dishes {
+  padding-left: 22px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+.tnode-dishes.empty { color: var(--ink-dim); }
+
+/* --- 档位进度条 --- */
+.tnode-prog {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 22px;
+  margin-top: 2px;
+}
+.tnode-bar {
+  flex: 1 1 auto;
+  height: 6px;
+  background: var(--paper-lo);
+  border: 1px solid var(--paper-edge);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.tnode-bar i {
+  display: block;
+  height: 100%;
+  background: var(--burnt);
+}
+.tnode-next {
+  font-size: 11px;
+  color: var(--ink-dim);
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* --- 说明 --- */
+.tnode-desc {
+  padding-left: 22px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.35;
+  margin-top: 1px;
+}
+
+/* 词条面板常驻高度：备餐页左栏是餐品库，右侧独立滚动 */
+.prep-trait-panel { max-height: 100%; }
+
+/* ---------- 侧栏：整页滚动（stage 自带滚动），不做嵌套滚动 ---------- */
+.prep-cols > .col-side { display: block; }
+.prep-cols .prep-trait-panel { display: block; max-height: none; }
+.prep-cols .tnode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: visible;
+  max-height: none;
+}
+
+/* dot 在米纸上的对比度 */
+.tnode .dots { flex: 0 0 auto; }
+.tnode .dot-sq {
+  background: #D6CBB2;
+  border: 1px solid var(--paper-edge);
+}
+.tnode .dot-sq.on {
+  background: var(--burnt);
+  border-color: #A84E18;
+}
+
+/* 压紧：每个节点最多 3 行 */
+.tnode { padding: 2px 6px 4px; }
+.tnode-head { line-height: 1.22; }
+.tnode-branch { line-height: 1.26; padding-left: 4px; }
+.tnode-dishes { padding-left: 20px; line-height: 1.3; }
+.tnode-prog { padding-left: 20px; margin-top: 1px; }
+.tnode-desc { padding-left: 20px; line-height: 1.28; }

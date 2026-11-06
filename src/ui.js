@@ -316,31 +316,65 @@ export function renderPrep(G) {
     </div>`;
   }).join('');
 
+  // ---------- 词条树：标签（你上架什么）→ 词条（你得到什么）→ 档位进度 ----------
   const traitRows = G.DATA.traits.traits.map((tr) => {
     const cnt = G.menuCount(tr.tag);
     const on = cnt >= tr.needMenu;
     const X = s.layers[tr.id] || 0;
     const tier = G.tierOf(tr);
-    const nextTier = (G.DATA.traits.tiers[tr.id] || []).find((x) => x.minX > X);
+    const tiers = G.DATA.traits.tiers[tr.id] || [];
+    const nextTier = tiers.find((x) => x.minX > X);
     const need = Math.max(0, tr.needMenu - cnt);
     const near = !on && need <= 1;
+
+    // 标签图标四态：已激活 / 差一款 / 未激活
+    const state = on ? 'highlight' : (near ? 'fragile' : 'grayed');
+    const tagIcon = 'ico/tag_' + tr.tag + '_' + state + '.png';
+    const tagName = G.TAG[tr.tag] ? G.TAG[tr.tag].name : tr.tag;
+
+    // 该标签下已上架的菜
+    const listed = s.menu.filter((m) => m.onMenu && G.FOOD[m.foodId]
+      && G.FOOD[m.foodId].tags.includes(tr.tag)).map((m) => G.FOOD[m.foodId].name);
+
+    // 档位进度：当前档下限 → 下一档下限
+    const curMin = tier ? tier.minX : 0;
+    const nextMin = nextTier ? nextTier.minX : curMin;
+    const prog = nextTier && nextMin > curMin
+      ? Math.max(0, Math.min(1, (X - curMin) / (nextMin - curMin)))
+      : (tier ? 1 : 0);
+
     const dots = Array.from({ length: Math.min(tr.needMenu, 6) }, (_, i) =>
       `<span class="dot-sq ${i < Math.min(cnt, tr.needMenu) ? 'on' : ''}"></span>`).join('');
-    return `<div class="trait ${on ? 'on' : ''} ${near ? 'near' : ''}">
-      <span>${icon('ico/' + tr.icon + '.png', 28)}</span>
-      <span>
-        <div class="trait-row2">
-          <span class="trait-name">${tr.name}</span>
-          <span class="dots">${dots}</span>
-          <span class="tiny muted">${cnt}/${tr.needMenu}款</span>
-          ${on ? `<span class="tiny ok">${tier ? tier.tier + '档' : '激活'}</span>` : `<span class="tiny muted">未激活</span>`}
-          <span class="layer">X=${Math.round(X)}</span>
-        </div>
-        <div class="tiny muted">
-          ${on && tier ? tier.desc : (near ? `⤷ 再上架 ${need} 款就点亮` : tr.desc)}
-          ${on && nextTier ? ` · 下一档 ${nextTier.minX} 层` : ''}
-        </div>
-      </span>
+
+    return `<div class="tnode ${on ? 'on' : ''} ${near ? 'near' : ''}">
+      <div class="tnode-head">
+        <span class="tnode-tagico">${icon(tagIcon, 26)}</span>
+        <span class="tnode-tag">${tagName}</span>
+        <span class="dots">${dots}</span>
+        <span class="tnode-cnt">${cnt}/${tr.needMenu} 款</span>
+        <span class="tnode-x">X=${Math.round(X)}</span>
+      </div>
+
+      <div class="tnode-branch">
+        <span class="tnode-line">└</span>
+        <span class="tnode-ico">${icon('ico/' + tr.icon + '.png', 24)}</span>
+        <span class="tnode-name">${tr.name}</span>
+        ${on
+          ? `<span class="tnode-tier">${tier ? tier.tier + ' 档' : '已激活'}</span>`
+          : `<span class="tnode-lock">${near ? `再上架 ${need} 款` : '未激活'}</span>`}
+      </div>
+
+      ${listed.length
+        ? `<div class="tnode-dishes">已上架 · ${listed.slice(0, 4).join('、')}${listed.length > 4 ? ` 等 ${listed.length} 道` : ''}</div>`
+        : (on ? '' : `<div class="tnode-dishes empty">上架 ${tr.needMenu} 款「${tagName}」就点亮</div>`)}
+
+      ${on
+        ? `<div class="tnode-prog">
+             <div class="tnode-bar"><i style="width:${(prog * 100).toFixed(0)}%"></i></div>
+             <span class="tnode-next">${nextTier ? `下一档 X=${nextTier.minX} · 差 ${nextTier.minX - X}` : '已满档'}</span>
+           </div>
+           <div class="tnode-desc">${tier ? tier.desc : tr.desc}</div>`
+        : ''}
     </div>`;
   }).join('');
 
@@ -354,16 +388,16 @@ export function renderPrep(G) {
   const used = G.surfaceUsed();
   const over = used > G.B.surface;
 
-  el('stage').innerHTML = `<div class="cols">
+  el('stage').innerHTML = `<div class="cols prep-cols">
     <div class="col-main">
       <div class="panel"><h3 class="panel-title">${icon('ui/ui_trend_up.png', 18)} 餐品库（点"上架"加入今日菜单）</h3>
         <div class="food-list">${foodRows}</div>
       </div>
     </div>
     <div class="col-side">
-      <div class="panel">
-        <h3 class="panel-title">${icon('ico/trait_speed.png', 18)} 词条面板</h3>
-        ${traitRows}
+      <div class="panel prep-trait-panel">
+        <h3 class="panel-title">${icon('ico/trait_speed.png', 18)} 词条树 · 上架同标签的菜点亮</h3>
+        <div class="tnode-list">${traitRows}</div>
       </div>
       <div class="panel mt8">
         <h3 class="panel-title">${icon('ui/ui_dot_full.png', 18)} 空间</h3>
