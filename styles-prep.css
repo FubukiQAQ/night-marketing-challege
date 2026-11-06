@@ -172,3 +172,27 @@
 .tnode-dishes { padding-left: 20px; line-height: 1.3; }
 .tnode-prog { padding-left: 20px; margin-top: 1px; }
 .tnode-desc { padding-left: 20px; line-height: 1.28; }
+
+/* ---------- 词条树筛选 ---------- */
+.tfilter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 6px 0 8px;
+}
+.tfilter button.small {
+  border: 1px solid var(--line-2);
+  border-image: none;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.tfilter button.small:hover { background: rgba(255, 255, 255, 0.12); filter: none; }
+.tfilter button.small.primary {
+  border-color: rgba(255, 222, 0, 0.55);
+  background: rgba(255, 222, 0, 0.14);
+  color: var(--accent);
+}

@@ -6,7 +6,8 @@ import * as Audio from './audio.js';
 import { renderSell, resetScene, SCENE } from './render.js';
 import { hud, renderStock, renderPrep, renderSellShell, updateSellStats,
          renderSettle, renderMeta, renderMenu, toast, keepScroll,
-         resetStockView, addToCart, subFromCart, clearCart, setStockTab, cartLines } from './ui.js';
+         resetStockView, addToCart, subFromCart, clearCart, setStockTab, cartLines,
+         setTraitFilter } from './ui.js';
 
 let DATA = null;
 let pending = null;   // 读到的存档，等玩家在主菜单选
@@ -81,6 +82,11 @@ async function boot() {
     }
     devAuto(dev);
     route();
+    if (dev === 'width') {
+      try { document.title = 'W boot'; await probeWidth(); }
+      catch (e) { document.title = 'W FAIL ' + e.message; }
+      return;
+    }
     if (dev === 'cart') {
       try { document.title = cartFlowTest(); }
       catch (e) { document.title = 'CART FAIL ' + e.message; }
@@ -362,6 +368,21 @@ function cartFlowTest() {
   return 'CART OK — ' + log.join(' | ');
 }
 
+
+/* ---------------------------------------------------------------- 宽度探针（?dev=width） */
+async function probeWidth() {
+  await new Promise((r) => setTimeout(r, 700));
+  const vw = document.documentElement.clientWidth;
+  const sw = document.documentElement.scrollWidth;
+  const bad = [];
+  document.querySelectorAll('*').forEach((e) => {
+    const r = e.getBoundingClientRect();
+    if (r.width > 0 && r.right > vw + 1) {
+      bad.push((e.id || e.className || e.tagName) + '@' + Math.round(r.right) + ' w=' + Math.round(r.width));
+    }
+  });
+  document.title = 'W vw=' + vw + ' sw=' + sw + ' | ' + bad.slice(0, 6).join(' ; ');
+}
 /* ---------------------------------------------------------------- 开发用自动推进 */
 function devAuto(mode) {
   if (mode === 'stock' || mode === 'cart') return;   // 停在备货阶段，方便截图/调试
@@ -608,6 +629,11 @@ function onClick(ev) {
     case 'toPrep': {
       G.finishStock();
       route();
+      break;
+    }
+    case 'traitFilter': {
+      setTraitFilter(t.dataset.f);
+      keepScroll(() => renderPrep(G));
       break;
     }
     case 'toggle': {

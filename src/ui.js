@@ -127,6 +127,12 @@ function recipeText(G, f, opts) {
   }).join(' · ');
 }
 
+/** 备餐页词条树的筛选：all / on / near */
+const prepView = { traitFilter: 'all' };
+
+export function setTraitFilter(f) { prepView.traitFilter = f; }
+export function getTraitFilter() { return prepView.traitFilter; }
+
 /** 备货页的视图状态：当前供应商页签 + 购物车（key = "si:ii"） */
 const stockView = { tab: 0, cart: {} };
 
@@ -242,23 +248,19 @@ export function renderStock(G) {
 
   st.innerHTML = `<div class="stock-root">
     <div class="stock-top">
-      <div class="stock-main">
-        <div class="panel stock-shelf-panel">
-          <h3 class="panel-title">今天的供应商 · 点格子进货</h3>
-          <div class="sup-tabs">${tabs}</div>
-          ${shelf}
-        </div>
-        <div class="panel stock-inv-panel">
-          <h3 class="panel-title">手上库存 ${used.toFixed(1)} / ${G.B.storage} 格</h3>
-          <div class="scroll" id="scrollInv">${invRows}</div>
-        </div>
+      <div class="panel stock-shelf-panel">
+        <h3 class="panel-title">今天的供应商 · 点格子进货</h3>
+        <div class="sup-tabs">${tabs}</div>
+        ${shelf}
       </div>
-      <div class="stock-side">
-        <div class="panel">
-          <h3 class="panel-title">菜谱速查 · 买料之前先看这里</h3>
-          <div class="scroll" id="scrollRecipe">${dishes}</div>
-          <div class="hint mt8">括号里是手上的库存。点「+5 份料」按这道菜 5 份的用量去今天的供应商买，可连点累加。</div>
-        </div>
+      <div class="panel stock-recipe-panel">
+        <h3 class="panel-title">菜谱速查 · 买料之前先看这里</h3>
+        <div class="scroll" id="scrollRecipe">${dishes}</div>
+        <div class="hint mt8">括号里是手上的库存。点「+5 份料」按这道菜 5 份的用量去今天的供应商买，可连点累加。</div>
+      </div>
+      <div class="panel stock-inv-panel">
+        <h3 class="panel-title">手上库存 ${used.toFixed(1)} / ${G.B.storage} 格</h3>
+        <div class="scroll" id="scrollInv">${invRows}</div>
       </div>
     </div>
     <div class="cart">
@@ -317,7 +319,7 @@ export function renderPrep(G) {
   }).join('');
 
   // ---------- 词条树：标签（你上架什么）→ 词条（你得到什么）→ 档位进度 ----------
-  const traitRows = G.DATA.traits.traits.map((tr) => {
+  const allTraits = G.DATA.traits.traits.map((tr) => {
     const cnt = G.menuCount(tr.tag);
     const on = cnt >= tr.needMenu;
     const X = s.layers[tr.id] || 0;
@@ -346,7 +348,7 @@ export function renderPrep(G) {
     const dots = Array.from({ length: Math.min(tr.needMenu, 6) }, (_, i) =>
       `<span class="dot-sq ${i < Math.min(cnt, tr.needMenu) ? 'on' : ''}"></span>`).join('');
 
-    return `<div class="tnode ${on ? 'on' : ''} ${near ? 'near' : ''}">
+    const html = `<div class="tnode ${on ? 'on' : ''} ${near ? 'near' : ''}">
       <div class="tnode-head">
         <span class="tnode-tagico">${icon(tagIcon, 26)}</span>
         <span class="tnode-tag">${tagName}</span>
@@ -376,7 +378,22 @@ export function renderPrep(G) {
            <div class="tnode-desc">${tier ? tier.desc : tr.desc}</div>`
         : ''}
     </div>`;
-  }).join('');
+    return { id: tr.id, on, near, html };
+  });
+
+  // 筛选：全部 / 已激活 / 差一款
+  const stat = {
+    on: allTraits.filter((x) => x.on).length,
+    near: allTraits.filter((x) => x.near).length,
+  };
+  const showTraits = allTraits.filter((x) => {
+    if (prepView.traitFilter === 'on') return x.on;
+    if (prepView.traitFilter === 'near') return x.near || x.on;
+    return true;
+  });
+  const traitRows = showTraits.length
+    ? showTraits.map((x) => x.html).join('')
+    : '<div class="hint">这个分类下还没有词条。先上架同标签的菜试试。</div>';
 
   const resoRows = G.DATA.traits.resonances.map((r) => {
     const ok = mods.resonances.find((x) => x.id === r.id);
@@ -397,6 +414,11 @@ export function renderPrep(G) {
     <div class="col-side">
       <div class="panel prep-trait-panel">
         <h3 class="panel-title">${icon('ico/trait_speed.png', 18)} 词条树 · 上架同标签的菜点亮</h3>
+        <div class="tfilter">
+          <button class="small ${prepView.traitFilter === 'all' ? 'primary' : ''}" data-act="traitFilter" data-f="all">全部 ${allTraits.length}</button>
+          <button class="small ${prepView.traitFilter === 'on' ? 'primary' : ''}" data-act="traitFilter" data-f="on">已激活 ${stat.on}</button>
+          <button class="small ${prepView.traitFilter === 'near' ? 'primary' : ''}" data-act="traitFilter" data-f="near">差一款 ${stat.near}</button>
+        </div>
         <div class="tnode-list">${traitRows}</div>
       </div>
       <div class="panel mt8">

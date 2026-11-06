@@ -239,23 +239,59 @@
 }
 
 /* 
-/* 左栏：货架 + 库存上下排布，填满高度 */
-.stock-main {
+
+/* ---------- 三栏：货架（宽） / 菜谱速查 / 库存 ---------- */
+.stock-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.9fr) minmax(300px, 1fr) minmax(190px, 0.62fr);
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.stock-shelf-panel,
+.stock-recipe-panel,
+.stock-inv-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   min-height: 0;
 }
-.stock-main .stock-shelf-panel { flex: 2.4 1 0; }
-.stock-main .stock-inv-panel { flex: 1 1 0; max-height: 30%; min-height: 132px; }
-.stock-inv-panel { display: flex; flex-direction: column; min-height: 0; }
+.stock-shelf-panel .shelf { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.stock-recipe-panel .scroll { flex: 1 1 auto; min-height: 0; }
 .stock-inv-panel .scroll { flex: 1 1 auto; min-height: 0; }
 .stock-inv-panel .item { padding: 2px 0; }
 
-/* 购物车右侧按钮留出呼吸，避免贴边 */
+/* 购物车右侧按钮留出呼吸 */
 .cart > button { margin-left: 2px; }
 .cart-total { min-width: 92px; text-align: right; }
 
-/* 防止格子被压缩导致菜名消失 */
-.shelf { grid-auto-rows: max-content; }
+/* 格子撑满可用高度，同时保证不被压缩到看不见菜名 */
+.shelf {
+  grid-auto-rows: minmax(88px, 1fr);
+  align-content: stretch;
+}
 .tile { min-height: 88px; justify-content: center; }
+
+/* ---------- 中屏：菜谱收进第二行 ---------- */
+@media (max-width: 1400px) {
+  .stock-top {
+    grid-template-columns: minmax(0, 1.6fr) minmax(240px, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .stock-inv-panel {
+    grid-column: 1 / -1;
+    max-height: 150px;
+  }
+}
+
+/* ---------- 窄屏：全部单列 ---------- */
+@media (max-width: 1024px) {
+  .stock-top {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+  }
+  .stock-recipe-panel { max-height: 320px; }
+  .stock-inv-panel { max-height: 140px; }
+  .shelf { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+}

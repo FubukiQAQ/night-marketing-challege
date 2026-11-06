@@ -1,0 +1,269 @@
+/* ============================================================
+   P2  响应式：1920 / 1440 / 720 三档 + 移动端
+   比赛要求界面规格 1920 / 1440 / 720，运行环境 Chrome 129
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   0) 基础：任何宽度下都不允许文字被挤成竖排
+   ------------------------------------------------------------ */
+.hud-day,
+.hud-cash,
+.hud-phase,
+.hud-meta,
+.hud-timer,
+#bar > span,
+#bar > button {
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------
+   1) 1920 及以上：放宽留白，字号上调一档
+   ------------------------------------------------------------ */
+@media (min-width: 1760px) {
+  #app { width: min(1900px, calc(100vw - 40px)); }
+  #hud { gap: 28px; padding: 18px 32px; }
+  #stage { padding: 28px 32px; }
+  #bar { padding: 18px 32px; }
+  .stock-top {
+    grid-template-columns: minmax(0, 2fr) minmax(340px, 1fr) minmax(220px, 0.6fr);
+    gap: 16px;
+  }
+  .shelf { grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); }
+  .tile { min-height: 96px; }
+  .cols { gap: 26px; }
+  .col-side { flex: 0 0 clamp(380px, 24vw, 480px); }
+}
+
+/* ------------------------------------------------------------
+   2) 1440 附近：收紧间距，保证三栏不换行
+   ------------------------------------------------------------ */
+@media (max-width: 1600px) {
+  #hud { gap: 18px; padding: 14px 20px; }
+  #stage { padding: 18px 20px; }
+  #bar { padding: 14px 20px; gap: 12px; }
+  .hud-meta { font-size: 11px; }
+}
+
+/* 三栏挤不下时，库存下移成一条 */
+@media (max-width: 1360px) {
+  .stock-top {
+    grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+  .stock-inv-panel {
+    grid-column: 1 / -1;
+    max-height: 132px;
+  }
+  .stock-inv-panel .scroll { max-height: 92px; }
+}
+
+/* ------------------------------------------------------------
+   3) 1024 以下：单列堆叠
+   ------------------------------------------------------------ */
+@media (max-width: 1024px) {
+  /* 顶栏：允许换行，藏掉次要信息，别把「音/菜单」挤出画面 */
+  #hud {
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    padding: 12px 16px;
+  }
+  .hud-meta { display: none; }
+  .hud-spacer { flex: 1 1 auto; }
+
+  .cols { flex-direction: column; gap: 12px; }
+  .col-side { flex: 0 0 auto; width: 100%; }
+  .stock-top {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+  }
+  .stock-recipe-panel { max-height: 300px; }
+  .stock-inv-panel { max-height: 120px; grid-column: auto; }
+  .shelf { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); }
+  .tile { min-height: 82px; }
+}
+
+/* ------------------------------------------------------------
+   4) 移动端（≤768）：竖屏也要能玩
+   ------------------------------------------------------------ */
+@media (max-width: 768px) {
+  #viewport { padding: 0; }
+  #app {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    animation: none;
+  }
+
+  /* --- 顶栏：两行，次要信息隐藏 --- */
+  #hud {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 10px 12px;
+    align-items: center;
+  }
+  .hud-day { font-size: 14px; }
+  .hud-cash { font-size: 16px; }
+  .hud-cash .dgrow { transform: scale(0.72); transform-origin: left center; }
+  .hud-phase { display: none; }
+  .hud-meta { display: none; }
+  .hud-timer { flex: 0 0 auto; gap: 8px; font-size: 12px; }
+  .hud-timer .bar { width: 72px; }
+  .hud-spacer { display: none; }
+
+  /* --- 舞台 --- */
+  #stage { padding: 10px; }
+  .panel { padding: 4px 6px; }
+  .panel-title { font-size: 13px; }
+
+  /* --- 备货：单列，格子两行可滚 --- */
+  .stock-root { gap: 8px; }
+  .stock-top { gap: 8px; }
+  .shelf {
+    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+    gap: 6px;
+    max-height: 42vh;
+  }
+  .tile { min-height: 74px; padding: 5px 3px 4px; }
+  .tile-name { font-size: 12px; }
+  .tile-row { font-size: 11px; gap: 4px; }
+  .sup-tab { padding: 4px 9px; font-size: 12px; }
+  .stock-recipe-panel { max-height: 26vh; }
+  .stock-inv-panel { max-height: 92px; }
+
+  /* --- 购物车：横向滚动，按钮整行 --- */
+  .cart {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px 8px;
+    border-width: 10px;
+  }
+  .cart-title { font-size: 12px; }
+  .cart-lines { order: 3; width: 100%; flex-basis: 100%; }
+  .cart-total { font-size: 14px; min-width: 0; }
+  .cart > button { padding: 4px 10px; font-size: 12px; }
+
+  /* --- 备餐：餐品卡改竖向 --- */
+  .food { border-width: 10px; padding: 2px 5px; }
+  .food-list { gap: 6px; }
+  .food-name { font-size: 14px; }
+  .food-sub,
+  .recipe { font-size: 11px; }
+  .food input[type='number'] { width: 52px; }
+  .tfilter { gap: 4px; }
+  .tfilter button.small { padding: 3px 8px; font-size: 11px; }
+  .tnode { border-width: 10px; }
+  .tnode-tag { font-size: 13px; }
+  .tnode-next { font-size: 10px; }
+
+  /* --- 出摊：canvas 占满宽度，徽章缩小 --- */
+  #sellwrap .sell-top {
+    position: static;
+    padding: 0 4px 4px;
+    gap: 8px;
+  }
+  .badge { border-width: 9px; padding: 2px 8px 2px 6px; gap: 5px; }
+  .badge-lbl { font-size: 11px; }
+  .badge-unit { font-size: 11px; }
+  .badge b .dgrow { transform: scale(0.6); transform-origin: left center; }
+  .badge b { height: 29px; overflow: hidden; }
+  .badge-rev b { height: 29px; }
+  #sellcanvas {
+    position: static;
+    transform: none;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 960 / 540;
+  }
+  #sellwrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 100%;
+    justify-content: center;
+  }
+  #sellwrap .sellbar { position: static; margin-top: 6px; }
+  .stat-chip { padding: 2px 7px; font-size: 11px; }
+  .stat-k { font-size: 10px; }
+
+  /* --- 底栏：换行，播放器简化 --- */
+  #bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+  #bar .spacer { display: none; }
+  #bar > button { flex: 1 1 auto; min-width: 96px; }
+  #player { display: none; }
+
+  /* --- 主菜单 --- */
+  #app.menu-mode .menu { padding-left: 20px; padding-right: 20px; }
+  .menu-title { font-size: 32px; }
+  .menu-actions button { width: 100%; }
+}
+
+/* ------------------------------------------------------------
+   5) 极窄（≤480，iPhone 竖屏）：防横向溢出
+   ------------------------------------------------------------ */
+@media (max-width: 480px) {
+  html, body { overflow-x: hidden; }
+
+  #hud { gap: 6px 8px; padding: 8px 10px; }
+  .hud-day { font-size: 12px; }
+  .hud-cash { font-size: 13px; }
+  .hud-cash .dgrow { transform: scale(0.52); }
+  .hud-timer .bar { width: 48px; }
+  .hud-timer { font-size: 11px; gap: 6px; }
+
+  .shelf { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+  .tile { min-height: 68px; }
+  .tile-name { font-size: 11px; }
+  .menu-title { font-size: 26px; }
+
+  /* 出摊顶部：两个徽章都要能收进去 */
+  #sellwrap .sell-top {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+  .badge {
+    border-width: 8px;
+    padding: 1px 6px 1px 5px;
+    gap: 4px;
+  }
+  .badge-lbl, .badge-unit { font-size: 10px; }
+  .badge b .dgrow { transform: scale(0.44); }
+  .badge b { height: 22px; overflow: hidden; }
+  .badge-rev b { height: 22px; }
+
+  /* 统计条：允许换行，别溢出 */
+  #sellwrap .sellbar { gap: 4px; padding: 0 2px; }
+  .stat-chip {
+    padding: 1px 6px;
+    font-size: 10px;
+    gap: 3px;
+    max-width: 100%;
+  }
+  .stat-k { font-size: 9px; }
+  .stat-chip.on em { font-size: 9px; }
+  .stat-chip img, .stat-chip .spr { display: none; }
+
+  /* 底栏文字截断 */
+  #bar { padding: 6px 10px; }
+  #bar > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* ------------------------------------------------------------
+   6) 横屏手机（高度很矮）：让舞台自己滚
+   ------------------------------------------------------------ */
+@media (max-height: 560px) and (orientation: landscape) {
+  #app { height: 100vh; }
+  #hud { padding: 8px 14px; gap: 12px; }
+  #stage { padding: 10px 14px; }
+  #bar { padding: 8px 14px; }
+  .shelf { max-height: 46vh; }
+}

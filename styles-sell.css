@@ -46,7 +46,11 @@
 .badge-rev {
   border-image-source: url(assets/ui9/ui_secondary_normal_9slice.png);
 }
-.badge-rev b .dgrow { filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.9)); }
+/* 收益数字染成金币色：位图数字是图片，用滤镜上色 */
+.badge-rev b .dgrow {
+  filter: sepia(1) saturate(6) hue-rotate(-8deg) brightness(1.15)
+          drop-shadow(0 1px 0 rgba(0, 0, 0, 0.9));
+}
 
 /* ---------- 底部统计徽章条 ---------- */
 #sellwrap .sellbar {

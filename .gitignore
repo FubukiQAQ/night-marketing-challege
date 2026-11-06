@@ -47,3 +47,5 @@ _p0-*.png
 _z-*
 tools/_*.py
 tools/__pycache__/
+_d-*/
+_dm/
