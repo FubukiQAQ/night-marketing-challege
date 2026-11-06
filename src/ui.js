@@ -2,6 +2,7 @@
 import { icon } from './sprites.js';
 import { formatTime } from './save.js';
 import * as Audio from './audio.js';
+import { digits, num } from './digits.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (id) => document.getElementById(id);
@@ -41,7 +42,7 @@ export function hud(G) {
     const p = Math.max(0, Math.min(1, s.minutesLeft / total));
     bar = `<div class="hud-timer">${icon('ui/ui_dot_full.png', 18)}
       <div class="bar ${p < 0.25 ? 'warn' : ''}"><i style="width:${p * 100}%"></i></div>
-      <span>${Math.round(s.minutesLeft)} 分</span></div>`;
+      <span class="dg-min">${digits(Math.round(s.minutesLeft), { size: 16 })}</span><span class="u">分</span></div>`;
   } else if (s.phase === 'SELL' && s.sell) {
     const p = s.sell.tick / G.B.sellTicks;
     bar = `<div class="hud-timer">${icon('ui/ui_dot_full.png', 18)}
@@ -50,7 +51,7 @@ export function hud(G) {
   }
   el('hud').innerHTML = `
     <span class="hud-day">第 ${s.day} / ${G.B.dayCount} 天</span>
-    <span class="hud-cash ${s.cash < 0 ? 'neg' : ''}">${icon('ui/ui_star_full.png', 18)} ${money(s.cash)}</span>
+    <span class="hud-cash ${s.cash < 0 ? 'neg' : ''}">${digits(num(s.cash), { size: 32 })}</span>
     <span class="hud-phase">${phaseName}</span>
     ${bar}
     <span class="hud-spacer"></span>
@@ -362,8 +363,8 @@ export function renderSellShell(G) {
   const s = G.s;
   el('stage').innerHTML = `<div id="sellwrap">
     <div class="sell-top">
-      <span class="sell-clock">${icon('ui/ui_dot_full.png', 26)} 剩余 <b id="sellleft">60</b><span class="unit">s</span></span>
-      <span class="sell-rev">${icon('ui/ui_star_full.png', 26)} <b id="sellrev">0</b></span>
+      <span class="sell-clock"><span class="u">剩余</span><b id="sellleft">${digits(60, { size: 48 })}</b><span class="unit">s</span></span>
+      <span class="sell-rev"><b id="sellrev">${digits(0, { size: 48 })}</b></span>
     </div>
     <canvas id="sellcanvas" width="960" height="540"></canvas>
     <div class="sellbar" id="sellstats"></div>
@@ -388,10 +389,18 @@ export function updateSellStats(G) {
     const tier = G.tierOf(tr);
     return `<span class="pill">${tr.name}<b> X${X}</b>${tier ? ' · ' + tier.tier + '档' : ''}</span>`;
   }).join('');
+  const leftSec = Math.max(0, Math.round((G.B.sellTicks - S.tick) / 200));
   const leftEl = el('sellleft');
-  if (leftEl) leftEl.textContent = Math.max(0, Math.round((G.B.sellTicks - S.tick) / 200));
+  if (leftEl && leftEl.dataset.v !== String(leftSec)) {
+    leftEl.dataset.v = leftSec;
+    leftEl.innerHTML = digits(leftSec, { size: 48 });
+  }
+  const revVal = Math.round(S.revenue);
   const revEl = el('sellrev');
-  if (revEl) revEl.textContent = S.revenue.toFixed(0);
+  if (revEl && revEl.dataset.v !== String(revVal)) {
+    revEl.dataset.v = revVal;
+    revEl.innerHTML = digits(num(revVal), { size: 48 });
+  }
   dom.innerHTML = `
     <span class="pill">${icon('ui/ui_trend_up.png', 18)} 卖出 <b>${S.served}</b></span>
     <span class="pill">${icon('ui/ui_trend_down.png', 18)} 流失 <b>${S.lost}</b></span>

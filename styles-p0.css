@@ -1,0 +1,35 @@
+/* ---------------------------------------------- 位图数字 */
+.dgrow {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  line-height: 0;
+  gap: 0;
+}
+.dg {
+  display: inline-block;
+  flex: 0 0 auto;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+.dg-t {
+  font-size: 12px;
+  color: var(--dim);
+  margin: 0 4px;
+  line-height: 1;
+}
+.dg-fallback {
+  font-variant-numeric: tabular-nums;
+}
+.dg-min { display: inline-flex; }
+
+/* 数字在深色底上带一点投影，提升可读性 */
+.hud-cash .dgrow,
+.sell-rev .dgrow,
+.sell-clock .dgrow {
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.9));
+}
+
+/* 顶栏现金稍微收一点，避免占太宽 */
+.hud-cash { display: inline-flex; align-items: center; }
+.hud-cash .dg { transform: scale(1); }
