@@ -1,0 +1,87 @@
+/* ============================================================
+   P1-3  出摊 HUD 徽章化
+   顶部：倒计时 / 收益 两个像素徽章
+   底部：卖出 / 流失 / 客诉 / 已激活词条
+   ============================================================ */
+
+#sellwrap .sell-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 0 6px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px 4px 10px;
+  border: 12px solid transparent;
+  border-image: url(assets/ui9/ui_panel_dark_normal_9slice.png) 16 fill stretch;
+  border-radius: 0;
+  background: none;
+}
+.badge b { display: inline-flex; line-height: 0; }
+
+.badge-lbl {
+  font-size: 13px;
+  color: #C9B98F;
+  letter-spacing: 0.08em;
+}
+.badge-unit {
+  font-size: 13px;
+  color: #9C9484;
+  margin-left: -2px;
+}
+.badge-ico { line-height: 0; display: inline-flex; }
+
+/* 时间告急时整个徽章泛红 */
+.badge-clock.hot {
+  border-image-source: url(assets/ui9/ui_danger_normal_9slice.png);
+}
+.badge-clock.hot .badge-lbl { color: #E8B0A6; }
+
+/* 收益徽章：描边用暖橙 */
+.badge-rev {
+  border-image-source: url(assets/ui9/ui_secondary_normal_9slice.png);
+}
+.badge-rev b .dgrow { filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.9)); }
+
+/* ---------- 底部统计徽章条 ---------- */
+#sellwrap .sellbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+}
+.stat-k { color: var(--dim); font-size: 12px; }
+.stat-chip b { font-weight: normal; color: var(--accent); }
+.stat-chip.warn b { color: var(--warn); }
+.stat-chip.warn { border-color: rgba(255, 92, 122, 0.45); }
+
+.stat-chip.on {
+  border-color: rgba(216, 114, 40, 0.55);
+  background: rgba(216, 114, 40, 0.12);
+}
+.stat-chip.on b { color: #FFC98C; }
+.stat-chip.on em {
+  font-style: normal;
+  font-size: 12px;
+  color: #C9B98F;
+}
+.stat-chip.on .spr { filter: brightness(1.1); }

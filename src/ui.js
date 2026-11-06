@@ -459,8 +459,15 @@ export function renderSellShell(G) {
   const s = G.s;
   el('stage').innerHTML = `<div id="sellwrap">
     <div class="sell-top">
-      <span class="sell-clock"><span class="u">剩余</span><b id="sellleft">${digits(60, { size: 48 })}</b><span class="unit">s</span></span>
-      <span class="sell-rev"><b id="sellrev">${digits(0, { size: 48 })}</b></span>
+      <span class="badge badge-clock">
+        <span class="badge-lbl">剩余</span>
+        <b id="sellleft">${digits(60, { size: 48 })}</b>
+        <span class="badge-unit">秒</span>
+      </span>
+      <span class="badge badge-rev">
+        <span class="badge-ico">${icon('ui/ui_star_full.png', 26)}</span>
+        <b id="sellrev">${digits(0, { size: 48 })}</b>
+      </span>
     </div>
     <canvas id="sellcanvas" width="960" height="540"></canvas>
     <div class="sellbar" id="sellstats"></div>
@@ -476,20 +483,15 @@ export function renderSellShell(G) {
 export function updateSellStats(G) {
   const S = G.s.sell;
   if (!S) return;
-  const dom = el('sellstats');
-  if (!dom) return;
-  const active = G.activeTraits();
-  const chips = Object.keys(active).map((id) => {
-    const tr = G.DATA.traits.traits.find((x) => x.id === id);
-    const X = Math.round(G.s.layers[id] || 0);
-    const tier = G.tierOf(tr);
-    return `<span class="pill">${tr.name}<b> X${X}</b>${tier ? ' · ' + tier.tier + '档' : ''}</span>`;
-  }).join('');
+
+  // ---------- 顶部徽章：每帧都可能变，单独更新 ----------
   const leftSec = Math.max(0, Math.round((G.B.sellTicks - S.tick) / 200));
   const leftEl = el('sellleft');
   if (leftEl && leftEl.dataset.v !== String(leftSec)) {
     leftEl.dataset.v = leftSec;
     leftEl.innerHTML = digits(leftSec, { size: 48 });
+    const badge = leftEl.closest ? leftEl.closest('.badge-clock') : null;
+    if (badge) badge.classList.toggle('hot', leftSec <= 10);
   }
   const revVal = Math.round(S.revenue);
   const revEl = el('sellrev');
@@ -497,11 +499,30 @@ export function updateSellStats(G) {
     revEl.dataset.v = revVal;
     revEl.innerHTML = digits(num(revVal), { size: 48 });
   }
+
+  // ---------- 底部统计：按 key 节流 ----------
+  const dom = el('sellstats');
+  if (!dom) return;
+  const key = [S.served, S.lost, S.complaints || 0,
+    Object.keys(G.activeTraits()).length,
+    Math.round(S.revenue)].join(',');
+  if (dom.dataset.k === key) return;
+  dom.dataset.k = key;
+
+  const active = G.activeTraits();
+  const chips = Object.keys(active).map((id) => {
+    const tr = G.DATA.traits.traits.find((x) => x.id === id);
+    const X = Math.round(G.s.layers[id] || 0);
+    const tier = G.tierOf(tr);
+    return `<span class="stat-chip on">${icon('ico/' + tr.icon + '.png', 18)}
+      <b>${tr.name}</b><em>X${X}${tier ? ' · ' + tier.tier + '档' : ''}</em></span>`;
+  }).join('');
+
   dom.innerHTML = `
-    <span class="pill">${icon('ui/ui_trend_up.png', 18)} 卖出 <b>${S.served}</b></span>
-    <span class="pill">${icon('ui/ui_trend_down.png', 18)} 流失 <b>${S.lost}</b></span>
-    <span class="pill">${icon('ui/ui_trend_down.png', 18)} 客诉 <b>${Math.round(S.complaints)}</b></span>
-    ${chips || '<span class="muted tiny">今天没有词条激活 —— 明天试试把同属性的菜多上几款</span>'}`;
+    <span class="stat-chip"><span class="stat-k">卖出</span><b>${S.served}</b></span>
+    <span class="stat-chip ${S.lost ? 'warn' : ''}"><span class="stat-k">流失</span><b>${S.lost}</b></span>
+    <span class="stat-chip ${(S.complaints || 0) ? 'warn' : ''}"><span class="stat-k">客诉</span><b>${S.complaints || 0}</b></span>
+    ${chips}`;
 }
 
 /* ---------------------------------------------------------------- 结算 */
