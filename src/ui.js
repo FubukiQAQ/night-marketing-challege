@@ -127,55 +127,80 @@ function recipeText(G, f, opts) {
   }).join(' · ');
 }
 
+/** 备货页的视图状态：当前供应商页签 + 购物车（key = "si:ii"） */
+const stockView = { tab: 0, cart: {} };
+
+export function resetStockView() {
+  stockView.tab = 0;
+  stockView.cart = {};
+}
+
+export function cartLines(G) {
+  return Object.entries(stockView.cart)
+    .map(([k, q]) => {
+      const [si, ii] = k.split(':').map(Number);
+      const sup = G.s.suppliers[si];
+      const it = sup && sup.items[ii];
+      if (!it || q <= 0) return null;
+      return { key: k, si, ii, q, ingId: it.ingId, price: it.price, cost: it.price * q };
+    })
+    .filter(Boolean);
+}
+
+export function addToCart(si, ii) {
+  const k = si + ':' + ii;
+  stockView.cart[k] = (stockView.cart[k] || 0) + 1;
+}
+
+export function subFromCart(key) {
+  if (!stockView.cart[key]) return;
+  stockView.cart[key] -= 1;
+  if (stockView.cart[key] <= 0) delete stockView.cart[key];
+}
+
+export function clearCart() { stockView.cart = {}; }
+export function setStockTab(i) { stockView.tab = i; }
+
 export function renderStock(G) {
   const s = G.s;
   const st = el('stage');
   const used = G.storageUsed();
 
-  // 库存
-  const invRows = Object.entries(s.inventory)
-    .filter(([, q]) => q > 0)
-    .sort((a, b) => b[1] - a[1])
-    .map(([id, q]) => {
-      const ing = G.ING[id];
-      return `<div class="item" style="grid-template-columns:24px 1fr auto auto">
-        <span>${icon(ing.sprite, 24)}</span>
-        <span class="item-name">${ing.name}</span>
-        <span class="item-stock">${ing.catName}</span>
-        <span class="item-stock">×${q}</span></div>`;
-    }).join('') || '<div class="hint">还没有进货。</div>';
+  // 页签保证不越界
+  if (stockView.tab >= s.suppliers.length) stockView.tab = 0;
+  const cur = s.suppliers[stockView.tab];
 
-  // 供应商（每行标出这料能做哪些菜）
-  const sups = s.suppliers.map((sup, si) => {
-    const items = sup.items.map((it, ii) => {
+  // ---------- 供应商页签 ----------
+  const tabs = s.suppliers.map((sup, si) => `
+    <button class="sup-tab ${si === stockView.tab ? 'on' : ''} ${sup.closed ? 'closed' : ''}"
+      data-act="stockTab" data-s="${si}">
+      ${sup.name}${sup.closed ? '（歇业）' : ''}
+    </button>`).join('');
+
+  // ---------- 货架格子 ----------
+  let shelf = '';
+  if (!cur) {
+    shelf = '<div class="hint">今天没有开门的供应商。</div>';
+  } else if (cur.closed) {
+    shelf = `<div class="shelf-empty">${cur.name} 今天没开门，换一家看看。</div>`;
+  } else {
+    const tiles = cur.items.map((it, ii) => {
       const ing = G.ING[it.ingId];
       const out = it.stock <= 0;
-      const users = G.ingredientUsers(it.ingId, 3);
-      const all = G.ingredientUsers(it.ingId);
-      const usedBy = all.length
-        ? `用于 ${all.slice(0, 4).join('、')}${all.length > 4 ? ` 等 ${all.length} 道菜` : ''}`
-        : '暂时没有用到它的菜';
-      return `<div class="item">
-        <span>${icon(ing.sprite, 24)}</span>
-        <span class="item-name">${ing.name}</span>
-        <span class="item-price">${money(it.price)}</span>
-        <span class="item-stock">${out ? '售罄' : '×' + it.stock}</span>
-        <span style="display:flex; gap:3px">
-          <button class="small" data-act="buy" data-s="${si}" data-i="${ii}" data-q="1" ${out ? 'disabled' : ''}>1</button>
-          <button class="small" data-act="buy" data-s="${si}" data-i="${ii}" data-q="10" ${out ? 'disabled' : ''}>10</button>
-          <button class="small" data-act="buy" data-s="${si}" data-i="${ii}" data-q="30" ${out ? 'disabled' : ''}>30</button>
-        </span>
-        <div class="used-by">${usedBy}</div>
-      </div>`;
+      const q = stockView.cart[stockView.tab + ':' + ii] || 0;
+      return `<button class="tile ${out ? 'out' : ''} ${q > 0 ? 'picked' : ''}"
+        data-act="cartAdd" data-s="${stockView.tab}" data-i="${ii}"
+        ${out ? 'disabled' : ''} title="${ing.name} · 单价 ${money(it.price)}">
+        <span class="tile-ico">${icon(ing.sprite, 40)}</span>
+        <span class="tile-name">${ing.name}</span>
+        <span class="tile-row"><b>${money(it.price)}</b><em>${out ? '售罄' : '×' + it.stock}</em></span>
+        ${q > 0 ? `<span class="tile-badge">${q}</span>` : ''}
+      </button>`;
     }).join('');
-    return `<div class="sup ${sup.closed ? 'closed' : ''}">
-      <div class="sup-head">${icon(sup.closed ? 'ui/ui_dot_empty.png' : 'ui/ui_dot_full.png', 22)}
-        ${sup.name}<span class="sup-mark">加价 ${(sup.markup * 100).toFixed(0)}%</span></div>
-      ${sup.closed ? '<div class="hint">今天没开门</div>' : items}
-    </div>`;
-  }).join('');
+    shelf = `<div class="shelf">${tiles}</div>`;
+  }
 
-  // 菜谱速查：所有已解锁的菜 + 配方 + 一键买齐
+  // ---------- 菜谱速查 ----------
   const dishes = G.availableFoods().map((f) => {
     const tags = f.tags.map((t) => `<span class="dish-tags">${G.TAG[t] ? G.TAG[t].name : t}</span>`).join(' ');
     const canMake = f.recipe.every((r) => (s.inventory[r.ing] || 0) >= r.qty || !!G.offerFor(r.ing));
@@ -189,27 +214,64 @@ export function renderStock(G) {
     </div>`;
   }).join('');
 
-  st.innerHTML = `<div class="cols">
-    <div class="col-main">
-      <div class="panel"><h3 class="panel-title">今天的供应商</h3>
-        <div class="sup-grid">${sups}</div>
+  // ---------- 库存 ----------
+  const invRows = Object.entries(s.inventory)
+    .filter(([, q]) => q > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([id, q]) => {
+      const ing = G.ING[id];
+      return `<div class="item" style="grid-template-columns:24px 1fr auto auto">
+        <span>${icon(ing.sprite, 24)}</span>
+        <span class="item-name">${ing.name}</span>
+        <span class="item-stock">${ing.catName}</span>
+        <span class="item-stock">×${q}</span></div>`;
+    }).join('') || '<div class="hint">还没有进货。</div>';
+
+  // ---------- 购物车 ----------
+  const lines = cartLines(G);
+  const total = lines.reduce((a, l) => a + l.cost, 0);
+  const cartBody = lines.length
+    ? lines.map((l) => `<span class="cart-line">
+        ${icon(G.ING[l.ingId].sprite, 20)}
+        <b>${G.ING[l.ingId].name}</b>
+        <em>×${l.q}</em>
+        <i>${money(l.cost)}</i>
+        <button class="mini" data-act="cartSub" data-k="${l.key}" title="减 1">−</button>
+      </span>`).join('')
+    : '<span class="cart-empty">点上面的格子把食材放进来</span>';
+
+  st.innerHTML = `<div class="stock-root">
+    <div class="stock-top">
+      <div class="stock-main">
+        <div class="panel stock-shelf-panel">
+          <h3 class="panel-title">今天的供应商 · 点格子进货</h3>
+          <div class="sup-tabs">${tabs}</div>
+          ${shelf}
+        </div>
+        <div class="panel stock-inv-panel">
+          <h3 class="panel-title">手上库存 ${used.toFixed(1)} / ${G.B.storage} 格</h3>
+          <div class="scroll" id="scrollInv">${invRows}</div>
+        </div>
+      </div>
+      <div class="stock-side">
+        <div class="panel">
+          <h3 class="panel-title">菜谱速查 · 买料之前先看这里</h3>
+          <div class="scroll" id="scrollRecipe">${dishes}</div>
+          <div class="hint mt8">括号里是手上的库存。点「+5 份料」按这道菜 5 份的用量去今天的供应商买，可连点累加。</div>
+        </div>
       </div>
     </div>
-    <div class="col-side">
-      <div class="panel">
-        <h3 class="panel-title">菜谱速查 · 买料之前先看这里</h3>
-        <div class="scroll" id="scrollRecipe" style="max-height:min(46vh, 430px)">${dishes}</div>
-        <div class="hint mt8">括号里是你手上的库存。点「+5 份料」会按这道菜 5 份的用量去今天的供应商那里买，可以连点累加。</div>
-      </div>
-      <div class="panel mt8">
-        <h3 class="panel-title">库存 ${used.toFixed(1)} / ${G.B.storage} 格</h3>
-        <div class="scroll" id="scrollInv" style="max-height:180px">${invRows}</div>
-      </div>
+    <div class="cart">
+      <span class="cart-title">购物车</span>
+      <div class="cart-lines">${cartBody}</div>
+      <span class="cart-total ${total > s.cash ? 'over' : ''}">合计 ${money(total)}</span>
+      <button class="small" data-act="cartClear" ${lines.length ? '' : 'disabled'}>清空</button>
+      <button class="primary" data-act="cartCommit" ${lines.length ? '' : 'disabled'}>结算采购</button>
     </div>
   </div>`;
 
   el('bar').innerHTML = `
-    <span>采购会消耗分钟：剩余 ${Math.round(s.minutesLeft)} 分钟</span>
+    <span>采购会消耗分钟：剩余 ${Math.round(s.minutesLeft)} 分钟 · 手里 ${money(s.cash)}</span>
     <span class="spacer"></span>
     <button class="primary" data-act="toPrep">去备餐 →</button>
     <span class="spacer"></span>`;

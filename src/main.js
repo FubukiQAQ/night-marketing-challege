@@ -5,7 +5,8 @@ import { loadSave, writeSave, clearSave, describeSave, formatTime } from './save
 import * as Audio from './audio.js';
 import { renderSell, resetScene, SCENE } from './render.js';
 import { hud, renderStock, renderPrep, renderSellShell, updateSellStats,
-         renderSettle, renderMeta, renderMenu, toast, keepScroll } from './ui.js';
+         renderSettle, renderMeta, renderMenu, toast, keepScroll,
+         resetStockView, addToCart, subFromCart, clearCart, setStockTab, cartLines } from './ui.js';
 
 let DATA = null;
 let pending = null;   // 读到的存档，等玩家在主菜单选
@@ -80,6 +81,10 @@ async function boot() {
     }
     devAuto(dev);
     route();
+    if (dev === 'cart') {
+      try { document.title = cartFlowTest(); }
+      catch (e) { document.title = 'CART FAIL ' + e.message; }
+    }
     return;
   }
 
@@ -207,13 +212,17 @@ async function devPlay() {
   };
   const step = [];
   for (let d = 0; d < 7; d++) {
-    // 备货：核心食材各买 30
+    // 备货：点前 8 个格子各 3 次进购物车，再结算
     for (let k = 0; k < 8; k++) {
-      const list = [...document.querySelectorAll('[data-act="buy"][data-q="10"]')];
-      const b = list[k % Math.max(1, list.length)];
-      if (!b) break;
-      b.click();
+      for (let n = 0; n < 10; n++) {
+        const t = document.querySelectorAll('.tile:not(.out)')[k];
+        if (!t) break;
+        t.click();
+      }
     }
+    const commit = document.querySelector('[data-act="cartCommit"]');
+    if (!commit || commit.disabled) throw new Error('购物车结算按钮不可用');
+    commit.click();
     click('[data-act="toPrep"]');
     // 备餐：优先上架同标签的菜
     if (d === 0) {
@@ -256,10 +265,13 @@ async function menuFlowTest() {
   if (!G.s || G.s.phase !== 'STOCK') throw new Error('没进入备货阶段');
   log.push('开局 OK');
 
-  // ② 买点东西，记下现金
-  const buy = $('[data-act="buy"][data-q="10"]');
-  if (!buy) throw new Error('供应商按钮没渲染');
-  buy.click();
+  // ② 买点东西（点格子进购物车 → 结算），记下现金
+  const tile = document.querySelector('.tile:not(.out)');
+  if (!tile) throw new Error('货架格子没渲染');
+  tile.click();
+  const commitBtn = $('[data-act="cartCommit"]');
+  if (!commitBtn || commitBtn.disabled) throw new Error('购物车结算按钮不可用');
+  commitBtn.click();
   const cash = Math.round(G.s.cash);
   log.push('买料后现金 ' + cash);
 
@@ -290,9 +302,69 @@ async function menuFlowTest() {
   return 'MENU OK — ' + log.join(' | ');
 }
 
+
+/* ---------------------------------------------------------------- 购物车自测（?dev=cart） */
+function cartFlowTest() {
+  const log = [];
+  const $ = (sel) => document.querySelector(sel);
+  const cash0 = G.s.cash;
+  const inv0 = Object.values(G.s.inventory).reduce((a, b) => a + b, 0);
+
+  // ① 点第一个格子 3 次，第二个格子 2 次
+  const tap = (idx) => {
+    const t = document.querySelectorAll('.tile:not(.out)')[idx];
+    if (!t) throw new Error('货架格子不足');
+    t.click();                       // 每次点击都会重渲染，必须重新查询
+  };
+  tap(0); tap(0); tap(0);
+  tap(1); tap(1);
+
+  const badge = document.querySelectorAll('.tile.picked').length;
+  if (badge !== 2) throw new Error('购物车标记数量不对：' + badge);
+  log.push('加购 OK（2 种）');
+
+  // ② 购物车应显示 2 行 + 合计
+  const lines = document.querySelectorAll('.cart-line').length;
+  if (lines !== 2) throw new Error('购物车行数不对：' + lines);
+  const totalTxt = $('.cart-total').textContent;
+  log.push('合计显示 ' + totalTxt.replace(/\s+/g, ' ').trim());
+
+  // ③ 减 1 应该让第一行消失（3→2 不会消失，这里减到 0）
+  const sub = document.querySelector('.cart-line .mini');
+  sub.click();
+  const lines2 = document.querySelectorAll('.cart-line').length;
+  if (lines2 !== 2) throw new Error('减 1 后行数异常：' + lines2);
+
+  // ④ 结算采购
+  const commit = $('[data-act="cartCommit"]');
+  if (!commit || commit.disabled) throw new Error('结算按钮不可用');
+  commit.click();
+
+  const inv1 = Object.values(G.s.inventory).reduce((a, b) => a + b, 0);
+  const cash1 = G.s.cash;
+  if (inv1 <= inv0) throw new Error('结算后库存没有增加');
+  if (cash1 >= cash0) throw new Error('结算后现金没有减少');
+  log.push(`库存 ${inv0}→${inv1}，现金 ${Math.round(cash0)}→${Math.round(cash1)}`);
+
+  // ⑤ 购物车应被清空
+  const left = document.querySelectorAll('.cart-line').length;
+  const empty = document.querySelector('.cart-empty');
+  if (left !== 0 || !empty) throw new Error('结算后购物车没清空');
+  log.push('清空 OK');
+
+  // ⑥ 切页签
+  const tabs = document.querySelectorAll('.sup-tab');
+  if (tabs.length < 2) throw new Error('页签不足');
+  tabs[1].click();
+  if (!document.querySelector('.sup-tab.on')) throw new Error('页签切换后没有选中态');
+  log.push('页签 OK');
+
+  return 'CART OK — ' + log.join(' | ');
+}
+
 /* ---------------------------------------------------------------- 开发用自动推进 */
 function devAuto(mode) {
-  if (mode === 'stock') return;            // 停在备货阶段，方便截图/调试
+  if (mode === 'stock' || mode === 'cart') return;   // 停在备货阶段，方便截图/调试
   const core = ['potato', 'rice', 'flour', 'egg', 'chicken_steak', 'starch_sausage',
     'veg_mixed', 'condiment', 'ice', 'cola'];
   core.forEach((ing) => {
@@ -359,7 +431,7 @@ function route() {
   document.getElementById('app').classList.remove('menu-mode');
   hud(G);
   switch (G.s.phase) {
-    case 'STOCK': Audio.playPhase('stock'); setBackdrop('market'); renderStock(G); save(); break;
+    case 'STOCK': Audio.playPhase('stock'); setBackdrop('market'); resetStockView(); renderStock(G); save(); break;
     case 'PREP': Audio.playPhase('prep'); setBackdrop('prep'); renderPrep(G); save(); break;
     case 'SELL': Audio.playPhase('sell'); setBackdrop('night'); startSellView(); break;
     case 'SETTLE': Audio.playPhase('sell'); setBackdrop('night'); renderSettle(G); save(); break;
@@ -416,6 +488,45 @@ function onClick(ev) {
   if (!t) return;
   const act = t.dataset.act;
   switch (act) {
+    case 'stockTab': {
+      setStockTab(+t.dataset.s);
+      keepScroll(() => renderStock(G));
+      break;
+    }
+    case 'cartAdd': {
+      addToCart(+t.dataset.s, +t.dataset.i);
+      keepScroll(() => renderStock(G));
+      break;
+    }
+    case 'cartSub': {
+      subFromCart(t.dataset.k);
+      keepScroll(() => renderStock(G));
+      break;
+    }
+    case 'cartClear': {
+      clearCart();
+      keepScroll(() => renderStock(G));
+      break;
+    }
+    case 'cartCommit': {
+      const lines = cartLines(G);
+      if (!lines.length) { toast('购物车是空的'); break; }
+      let done = 0, fail = null;
+      for (const l of lines) {
+        const r = G.buy(l.si, l.ii, l.q);
+        if (!r.ok) { fail = r.msg; break; }
+        done++;
+        if (G.s.phase !== 'STOCK') break;   // 时间耗尽会自动收摊
+      }
+      clearCart();
+      if (fail) toast(fail);
+      else if (G.s.phase === 'STOCK') toast(`已采购 ${done} 种食材`);
+      hud(G);
+      if (G.s.phase === 'STOCK') keepScroll(() => renderStock(G));
+      else route();
+      save();
+      break;
+    }
     case 'buy': {
       const r = G.buy(+t.dataset.s, +t.dataset.i, +t.dataset.q);
       if (!r.ok) toast(r.msg); else { hud(G); keepScroll(() => renderStock(G)); }
