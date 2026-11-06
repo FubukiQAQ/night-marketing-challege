@@ -1,0 +1,123 @@
+/* ============================================================
+   P0-3  调色板与对比度
+   浅色纸面（#E8E0C8 系）上的文字必须转深棕，否则米白字看不见
+   ============================================================ */
+
+:root {
+  /* 纸面（取自 ui_panel_light） */
+  --paper:        #E8E0C8;
+  --paper-hi:     #F8EFD6;
+  --paper-lo:     #CFC3A5;
+  --paper-edge:   #9A8A6A;
+  /* 纸面上的字色 */
+  --ink-on-paper: #3A2E1C;
+  --ink-soft:     #6B5A3E;
+  --ink-dim:      #8A7752;
+  /* 木框 / 深底（取自 ui_panel_dark） */
+  --wood:         #161F2E;
+  --wood-hi:      #33455F;
+  /* 强调 */
+  --brass:        #FFC93C;
+  --burnt:        #D87228;
+  --alert:        #B83A2E;
+}
+
+/* ---------- 浅色纸面上的文字统一转深棕 ---------- */
+.sup,
+.food,
+.kpi,
+.menu-help-row,
+.bonus,
+.sup *,
+.food *,
+.kpi *,
+.menu-help-row *,
+.bonus * {
+  color: var(--ink-on-paper);
+}
+
+/* 次级文字在纸面上用更柔和的棕 */
+.sup .item-stock,
+.sup .used-by,
+.food .food-sub,
+.food .recipe,
+.kpi .k,
+.bonus span,
+.menu-help-row span {
+  color: var(--ink-soft);
+}
+
+.food .supply-note { color: var(--ink-soft); }
+.food .food-sub { color: var(--ink-soft); }
+
+/* 缺料 / 警告：在纸面上用暗红，不用亮红 */
+.lack,
+.food .lack,
+.sup .lack { color: var(--alert); }
+.warn { color: var(--alert); }
+
+/* 主标题在纸面上用最深棕 */
+.food .food-name,
+.sup .sup-head,
+.kpi .v,
+.bonus b,
+.menu-help-row b {
+  color: var(--ink-on-paper);
+}
+
+/* 纸面上的输入框：白底深字 */
+.food input[type='number'] {
+  background: var(--paper-hi);
+  color: var(--ink-on-paper);
+  border: 1px solid var(--paper-edge);
+}
+.food input[type='number']:focus {
+  border-color: var(--burnt);
+  outline: none;
+}
+
+/* 纸面上的小按钮：改用描边风格，别用深色 9slice */
+.food button.small {
+  background: var(--paper-hi);
+  border: 1px solid var(--paper-edge);
+  color: var(--ink-on-paper);
+}
+.food button.small:hover {
+  background: #FFE9B8;
+  border-color: var(--burnt);
+  filter: none;
+}
+.food button.small.danger {
+  border-color: #A8524A;
+  color: #7A2A22;
+  background: #F0D9D0;
+}
+
+/* 已上架的餐品卡：用暖黄纸面区分 */
+.food.on {
+  background: rgba(255, 233, 184, 0.35);
+}
+
+/* 属性标签色在纸面上要压深一档才看得清 */
+.food .tag-chip {
+  filter: brightness(0.72) saturate(1.15);
+}
+
+/* ---------- 深色面板里维持浅字 ---------- */
+.panel .hint,
+.panel .panel-title,
+.panel .mate { color: var(--text); }
+.panel-title { color: #C9B98F; }
+
+/* ---------- 主菜单：保持深底浅字 ---------- */
+.menu-title,
+.menu-sub,
+.menu-kicker,
+.menu-foot { color: var(--text); }
+.menu-sub { color: #C9C4B8; }
+
+/* ---------- 结算 KPI：纸面上深棕数字 ---------- */
+.kpi .v.acc { color: #8A5A18; }
+
+/* ---------- 让暖色强调在纸面上也有足够对比 ---------- */
+.ok, .gold { color: #8A5A18; }
