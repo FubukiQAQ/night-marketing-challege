@@ -45,3 +45,5 @@ _p[0-9]*/
 _q[0-9]*/
 _p0-*.png
 _z-*
+tools/_*.py
+tools/__pycache__/
