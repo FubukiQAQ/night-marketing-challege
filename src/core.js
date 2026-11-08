@@ -20,6 +20,45 @@ const TIER_OPS_KEYS = [
 ];
 
 export function makeGame(DATA) {
+  /** 特殊顾客：更挑、更值钱、成交后触发一次 QTE */
+  const SPECIALS = {
+    blogger: {
+      name: '探店博主', need: ['cold', 'dessert', 'madedrink'],
+      mul: 1.6, rep: 3, failRep: -2, kind: 'pick',
+      desc: '先拍照再动筷，卖相第一',
+      picks: [
+        { t: '擦亮碗边、摆正配菜再端上去', ok: true },
+        { t: '直接端上去，快就行', ok: false },
+        { t: '让她自己挑一份', ok: false },
+      ],
+    },
+    critic: {
+      name: '美食评论家', need: ['braised', 'soup', 'grilled'],
+      mul: 2.2, rep: 4, failRep: -3, kind: 'timing',
+      desc: '嘴上不留情，但一句话能带来客流',
+    },
+    eater: {
+      name: '大胃王', need: null,
+      mul: 2.6, rep: 1, failRep: -1, kind: 'pick',
+      desc: '一个人点三份，吃完还要打包',
+      picks: [
+        { t: '提醒他还有一份主食没上', ok: true },
+        { t: '照单上菜，别的不管', ok: false },
+        { t: '劝他少点一些', ok: false },
+      ],
+    },
+    foodie: {
+      name: '老饕', need: ['madedish', 'grilled', 'braised'],
+      mul: 1.9, rep: 3, failRep: -2, kind: 'timing',
+      desc: '只认现做的锅气，凉了就摇头',
+    },
+    gold_courier: {
+      name: '金主代跑', need: null,
+      mul: 3.0, rep: 2, failRep: -2, kind: 'timing',
+      desc: '一口气打包十份，赶时间',
+    },
+  };
+
   const B = DATA.balance;
   const num = (k, d) => (typeof B[k] === 'number' ? B[k] : d);
   const tags = DATA.tags, traits = DATA.traits.traits || DATA.traits;
@@ -587,6 +626,14 @@ export function makeGame(DATA) {
       }
     }
 
+    // QTE 倒计时：超时算没接住
+    if (S.qte && !S.qte.ended) {
+      S.qte.left--;
+      if (S.qte.left <= 0) G.resolveQte(false, '没来得及', true);
+    }
+    // 彩带/横幅超时清理
+    if (S.banner && T >= S.banner.until) S.banner = null;
+
     // 厨具加工
     for (const u in S.jobs) {
       const slots = UT[u] ? UT[u].slots : 1;
@@ -624,12 +671,65 @@ export function makeGame(DATA) {
     let r = G.rng() * total;
     let wantTag = keys[0] || 'fast';
     for (const k of keys) { r -= w[k]; if (r <= 0) { wantTag = k; break; } }
-    return {
+    const cust = {
       state: 'browse', age: 0, wantTag,
       patience: G.B.patience * (0.7 + G.rng() * 0.6),
       waited: 0,
       budget: 30 + G.rng() * 60,
     };
+
+    // 特殊顾客：小概率出现，更挑也更值钱
+    const chance = (G.B.specialChance != null ? G.B.specialChance : 0.14);
+    if (G.rng() < chance) {
+      const ids = Object.keys(SPECIALS);
+      const id = ids[Math.floor(G.rng() * ids.length) % ids.length];
+      const sp = SPECIALS[id];
+      cust.special = id;
+      cust.mood = 'normal';
+      cust.patience = G.B.patience * (0.55 + G.rng() * 0.35);
+      cust.budget = 80 + G.rng() * 120;
+      // 优先点他要的那类
+      if (sp.need) {
+        const hit = sp.need.filter((t) => keys.includes(t));
+        if (hit.length) cust.wantTag = hit[Math.floor(G.rng() * hit.length) % hit.length];
+      }
+    }
+    return cust;
+  };
+
+  /** 玩家接下 QTE。ok=true 成功，false 失败（超时也走这里） */
+  G.resolveQte = function (ok, reason, soft) {
+    const s = G.s;
+    const S = s.sell;
+    const q = S && S.qte;
+    if (!q || q.ended) return null;
+    q.ended = true;
+    q.ok = !!ok;
+
+    const sp = SPECIALS[q.type] || {};
+    if (ok) {
+      // 成功：加钱 + 加口碑 + 记一次高光
+      const bonus = q.base * (q.mul - 1);
+      S.revenue += bonus;
+      s.rep = (s.rep || 0) + (q.rep || 2);
+      S.qteWins = (S.qteWins || 0) + 1;
+      if (q.cust) q.cust.mood = 'happy';
+      S.floaters.push({ kind: 'money', text: `+¥${bonus.toFixed(1)}`, age: 0 });
+      S.banner = { text: `${q.name}：这摊子值得再来`, kind: 'ok', until: S.tick + 150 };
+    } else {
+      // 失败：掉口碑；超时算轻度，不计客诉、罚一半
+      const pen = (q.failRep || -2) * (soft ? 0.5 : 1);
+      s.rep = Math.max(0, (s.rep || 0) + pen);
+      if (!soft) S.complaints = (S.complaints || 0) + 1;
+      S.qteFails = (S.qteFails || 0) + 1;
+      if (q.cust) q.cust.mood = 'unhappy';
+      S.floaters.push({ kind: 'bad', text: reason || '没接住', age: 0 });
+      S.banner = { text: `${q.name}：就这？`, kind: 'bad', until: S.tick + 150 };
+    }
+    // 让这个人快点走，别堵队
+    if (q.cust) q.cust.happyUntil = Math.min(q.cust.happyUntil || S.tick, S.tick + 20);
+    S.qte = null;
+    return { ok: q.ok, type: q.type, name: q.name };
   };
 
   G.pickDish = function (tag, exclude) {
@@ -768,6 +868,40 @@ export function makeGame(DATA) {
       job.cust.state = 'happy';
       job.cust.happyUntil = S.tick + 45;
       job.cust.done = false;
+
+      // 特殊顾客：成交后开一次 QTE（同时只允许一个）
+      if (job.cust.special && !S.qte) {
+        const sp = SPECIALS[job.cust.special];
+        const total = (G.B.qteTicks != null ? G.B.qteTicks : 620);
+        const qte = {
+          type: job.cust.special,
+          name: sp.name,
+          kind: sp.kind,
+          total,
+          left: total,
+          cust: job.cust,
+          base: price,
+          mul: sp.mul,
+          rep: sp.rep,
+          failRep: sp.failRep,
+          ended: false,
+          ok: false,
+        };
+        if (sp.kind === 'pick') {
+          // 打乱选项顺序，避免每次都点同一个位置
+          const opts = sp.picks.map((p) => ({ t: p.t, ok: p.ok }));
+          for (let i = opts.length - 1; i > 0; i--) {
+            const j = Math.floor(G.rng() * (i + 1)) % (i + 1);
+            const tmp = opts[i]; opts[i] = opts[j]; opts[j] = tmp;
+          }
+          qte.options = opts;
+        } else {
+          // 时机：绿区在中间偏右，位置由 left 推出来
+          qte.zone = [0.44, 0.60];
+        }
+        S.qte = qte;
+        S.floaters.push({ kind: 'tier', text: sp.name + ' 来了!', age: 0 });
+      }
     }
     // 售出类统计钩子
     if (f.perk && f.perk.trigger === 'on_first_sold') {

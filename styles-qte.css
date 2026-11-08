@@ -1,0 +1,140 @@
+/* ============================================================
+   QTE 覆盖层：特殊顾客的互动
+   ============================================================ */
+
+.qte-host {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 76px;
+  z-index: 6;
+  justify-content: center;
+  pointer-events: none;
+}
+.qte-host.on { display: flex; }
+
+.qte {
+  pointer-events: auto;
+  min-width: 340px;
+  max-width: 560px;
+  padding: 10px 14px 12px;
+  border: 12px solid transparent;
+  border-image: url(assets/ui9/ui_panel_dark_normal_9slice.png) 16 fill stretch;
+  background: rgba(10, 14, 22, 0.72);
+  color: #F7EEDD;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  animation: qteIn 0.22s var(--ease) both;
+}
+@keyframes qteIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.qte-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.qte-head b {
+  font-weight: normal;
+  font-size: 15px;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+.qte-head span {
+  font-size: 12px;
+  color: var(--dim);
+}
+
+/* --- 计时条 --- */
+.qte-timer {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 1px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.qte-timer i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ffc93c, #ff7a45);
+  transition: width 0.05s linear;
+}
+
+/* --- 时机条 --- */
+.qte-lane {
+  position: relative;
+  height: 22px;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.qte-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(110, 231, 168, 0.28);
+  border-left: 1px solid #6ee7a8;
+  border-right: 1px solid #6ee7a8;
+}
+.qte-marker {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 4px;
+  margin-left: -2px;
+  background: #fff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
+}
+
+.qte-btn {
+  width: 100%;
+  border-image-source: url(assets/ui9/ui_primary_normal_9slice.png);
+  color: var(--accent);
+  font-size: 15px;
+  padding: 4px 10px;
+}
+.qte-btn:hover { border-image-source: url(assets/ui9/ui_primary_hover_9slice.png); }
+
+/* --- 三选一 --- */
+.qte-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.qte-opt {
+  text-align: left;
+  font-size: 13px;
+  padding: 7px 12px;
+  border-image-source: url(assets/ui9/ui_secondary_normal_9slice.png);
+  color: #F7EEDD;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.85);
+}
+.qte-opt:hover {
+  border-image-source: url(assets/ui9/ui_primary_hover_9slice.png);
+  color: #2A1A08;
+  text-shadow: none;
+  filter: none;
+}
+
+/* 移动端：贴底、按钮更大，方便拇指 */
+@media (max-width: 768px) {
+  .qte-host { bottom: 8px; }
+  .qte {
+    min-width: 0;
+    max-width: 100%;
+    margin: 0 6px;
+    padding: 8px 10px 10px;
+    border-width: 10px;
+  }
+  .qte-head b { font-size: 13px; }
+  .qte-head span { font-size: 11px; }
+  .qte-btn { font-size: 14px; padding: 8px 10px; }
+  .qte-opt { font-size: 12px; padding: 9px 10px; }
+  .qte-lane { height: 26px; }
+}

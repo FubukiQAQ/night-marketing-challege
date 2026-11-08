@@ -83,7 +83,15 @@ for (let d = 1; d <= 7; d++) {
   G.startSell();
   const S = G.s.sell;
   let n = 0;
-  while (!S.done && n++ < G.B.sellTicks + 20) G.tick();
+  while (!S.done && n++ < G.B.sellTicks + 20) {
+    // 模拟玩家处理 QTE：按 70% 的手速/判断力决策
+    const q = S.qte;
+    if (q && !q.ended) {
+      const good = G.rng() < 0.7;
+      G.resolveQte(good, good ? '' : '手慢了');
+    }
+    G.tick();
+  }
   const st = G.endSell();
   totalScore += st.score;
   const active = Object.keys(G.effects().active);

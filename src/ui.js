@@ -133,11 +133,69 @@ const HELP = [
   ['存档', '阶段切换自动存本地。出摊中途退回菜单会回到备餐阶段。'],
 ];
 
+
+/** 街坊名录：把 story.json 里写的顾客小传展示出来 */
+export function renderArchive(o) {
+  const story = o.story || null;
+  const CUST = [
+    ['student', '学生'], ['worker', '夜班工人'], ['runner', '外卖骑手'], ['courier', '跑腿的'],
+    ['couple', '情侣'], ['elder', '老街坊'], ['drunk', '喝多了的'], ['child', '小孩'],
+  ];
+  const SPECIAL = [
+    ['blogger', '探店博主', 'pick'], ['critic', '美食评论家', 'timing'],
+    ['eater', '大胃王', 'pick'], ['foodie', '老饕', 'timing'],
+    ['gold_courier', '金主代跑', 'timing'],
+  ];
+
+  const cards = CUST.map(([id, fallback]) => {
+    const b = (story && story.customers && story.customers[id]) || {};
+    return `<div class="arch-card">
+      <span class="arch-ico">${icon('char/chr_customer_' + id + '_wait.png', 56)}</span>
+      <div class="arch-body">
+        <b>${b.name || fallback}</b>
+        <span class="arch-bio">${b.bio || ''}</span>
+        ${b.line ? `<em class="arch-line">「${b.line}」</em>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  const specials = SPECIAL.map(([id, name, kind]) => `
+    <div class="arch-card special">
+      <span class="arch-ico">${icon('char/chr_special_' + id + '_normal.png', 72)}</span>
+      <div class="arch-body">
+        <b>${name}</b>
+        <span class="arch-bio">${kind === 'pick' ? '考你怎么应对 · 三选一' : '考你手速 · 指针进绿区'}</span>
+      </div>
+    </div>`).join('');
+
+  el('stage').innerHTML = `<div class="menu archive">
+    <div class="menu-kicker">街坊名录</div>
+    <h1 class="menu-title arch-title">这条街上<br><span>都是什么人</span></h1>
+    <p class="menu-sub">客人不是数字。他们的口袋、胃口和耐心都不一样，记住谁在等什么。</p>
+
+    <div class="arch-section">常客</div>
+    <div class="arch-grid">${cards}</div>
+
+    <div class="arch-section">特殊来客 <span class="muted tiny">（出摊时小概率出现，成交后会考你一道题）</span></div>
+    <div class="arch-grid special">${specials}</div>
+
+    <div class="menu-actions">
+      <button class="primary" data-act="backMenu">← 返回主菜单</button>
+    </div>
+  </div>`;
+  el('bar').innerHTML = `<span>特殊来客答对加钱加口碑，答错或超时会掉口碑，超时罚得轻一些。</span>`;
+}
+
 export function renderMenu(o) {
   const d = o.desc;
   el('hud').innerHTML = `<span class="hud-day">不烧心夜市挑战</span>
     <span class="hud-spacer"></span>
     <span class="hud-meta">本地存档 · v0.4</span>`;
+
+  if (o.archive) {
+    renderArchive(o);
+    return;
+  }
 
   if (o.help) {
     el('stage').innerHTML = `<div class="menu">
@@ -165,6 +223,7 @@ export function renderMenu(o) {
       ${o.hasMeta ? `<button class="big" data-act="newRun">开始新一轮（继承层数与技能）</button>` : ''}
       ${d || o.hasMeta ? '' : `<button class="primary big" data-act="newRun">开始第一轮</button>`}
       <button data-act="help">玩法说明</button>
+      <button data-act="archive">街坊名录</button>
       ${d || o.hasMeta ? `<button class="danger" data-act="wipe">${o.confirming ? '确定清空存档？再点一次' : '清空存档'}</button>` : ''}
     </div>
 
@@ -556,6 +615,7 @@ export function renderSellShell(G) {
       </span>
     </div>
     <canvas id="sellcanvas" width="960" height="540"></canvas>
+    <div class="qte-host" id="qtehost"></div>
     <div class="sellbar" id="sellstats"></div>
   </div>`;
   el('bar').innerHTML = `
@@ -564,6 +624,65 @@ export function renderSellShell(G) {
     <button class="small" data-act="speed">1x</button>
     <button data-act="skipSell">打烊结算</button>
     <span class="spacer"></span>`;
+}
+
+
+/** QTE 覆盖层：时机条 / 三选一 */
+function renderQte(G) {
+  const host = document.getElementById('qtehost');
+  if (!host) return;
+  const S = G.s.sell;
+  const q = S && S.qte;
+
+  if (!q) {
+    if (host.dataset.on === '1') {
+      host.dataset.on = '0';
+      host.innerHTML = '';
+      host.classList.remove('on');
+    }
+    return;
+  }
+
+  // 只在数值变化时重绘（每 tick 一次，别每帧刷）
+  const key = q.type + ':' + q.left + ':' + (q.ended ? '1' : '0');
+  if (host.dataset.k === key) return;
+  host.dataset.k = key;
+  host.dataset.on = '1';
+  host.classList.add('on');
+
+  const ratio = Math.max(0, q.left / q.total);
+  const pos = 1 - ratio;                 // 指针位置 0..1
+  const secs = Math.max(0, q.left / 200).toFixed(1);
+
+  if (q.kind === 'pick') {
+    host.innerHTML = `
+      <div class="qte">
+        <div class="qte-head">
+          <b>${q.name}</b>
+          <span>在看着你做什么 · ${secs}s</span>
+        </div>
+        <div class="qte-timer"><i style="width:${(ratio * 100).toFixed(1)}%"></i></div>
+        <div class="qte-opts">
+          ${(q.options || []).map((o, i) =>
+            `<button class="qte-opt" data-act="qtePick" data-i="${i}">${o.t}</button>`).join('')}
+        </div>
+      </div>`;
+  } else {
+    const z0 = (q.zone ? q.zone[0] : 0.44) * 100;
+    const z1 = (q.zone ? q.zone[1] : 0.60) * 100;
+    host.innerHTML = `
+      <div class="qte">
+        <div class="qte-head">
+          <b>${q.name}</b>
+          <span>指针进绿区时按下 · ${secs}s</span>
+        </div>
+        <div class="qte-lane">
+          <div class="qte-zone" style="left:${z0}%;width:${z1 - z0}%"></div>
+          <div class="qte-marker" style="left:${(pos * 100).toFixed(1)}%"></div>
+        </div>
+        <button class="qte-btn" data-act="qteHit">上菜！</button>
+      </div>`;
+  }
 }
 
 export function updateSellStats(G) {
@@ -585,6 +704,9 @@ export function updateSellStats(G) {
     revEl.dataset.v = revVal;
     revEl.innerHTML = digits(num(revVal), { size: 48 });
   }
+
+  // ---------- QTE 覆盖层 ----------
+  renderQte(G);
 
   // ---------- 底部统计：按 key 节流 ----------
   const dom = el('sellstats');

@@ -7,7 +7,7 @@ import { renderSell, resetScene, SCENE } from './render.js';
 import { hud, renderStock, renderPrep, renderSellShell, updateSellStats,
          renderSettle, renderMeta, renderMenu, toast, keepScroll,
          resetStockView, addToCart, subFromCart, clearCart, setStockTab, cartLines,
-         setTraitFilter } from './ui.js';
+         setTraitFilter, renderArchive } from './ui.js';
 
 let DATA = null;
 let pending = null;   // 读到的存档，等玩家在主菜单选
@@ -30,7 +30,7 @@ function setBackdrop(name) {
   img.onload = () => { node.style.backgroundImage = 'url(' + url + ')'; node.classList.add('on'); };
   img.src = url;
 }
-let menuOpts = { confirming: false, help: false };
+let menuOpts = { confirming: false, help: false, archive: false };
 
 let G = null;
 let raf = 0;
@@ -61,7 +61,8 @@ async function boot() {
   Audio.installUnlock();
   Audio.loadTracks();
 
-  const dev = new URLSearchParams(location.search).get('dev');
+  const params = new URLSearchParams(location.search);
+  const dev = params.get('dev');
   if (dev === 'menuflow') {
     showMenu();
     try { document.title = await menuFlowTest(); }
@@ -88,6 +89,21 @@ async function boot() {
       catch (e) { document.title = 'W FAIL ' + e.message; }
       return;
     }
+    if (dev === 'qte2') {
+      qteShowcase('timing');
+      updateSellStats(G);
+      return;
+    }
+    if (dev === 'qte2pick') {
+      qteShowcase('pick');
+      updateSellStats(G);
+      return;
+    }
+    if (dev === 'qte') {
+      try { document.title = qteFlowTest(); }
+      catch (e) { document.title = 'QTE FAIL ' + e.message; }
+      return;
+    }
     if (dev === 'cart') {
       try { document.title = cartFlowTest(); }
       catch (e) { document.title = 'CART FAIL ' + e.message; }
@@ -95,6 +111,7 @@ async function boot() {
     return;
   }
 
+  if (params.get('page') === 'archive') menuOpts.archive = true;
   showMenu();
 }
 
@@ -168,6 +185,8 @@ function showMenu() {
     savedAt: pending ? pending.savedAt : 0,
     layerTotal,
     opening: (DATA && DATA.story) ? DATA.story.opening : null,
+    archive: menuOpts.archive,
+    story: (DATA && DATA.story) || null,
   });
   mountPlayer();
 }
@@ -180,7 +199,7 @@ function continueGame() {
   if (o.balance) G.B = Object.assign(G.B, o.balance);
   if (G.s.phase === 'SELL') { G.s.phase = 'PREP'; G.s.sell = null; }
   G.rng = mulberry32(G.s.rngSeed || 1);
-  menuOpts = { confirming: false, help: false };
+  menuOpts = { confirming: false, help: false, archive: false };
   route();
 }
 
@@ -190,7 +209,7 @@ function startNewRun() {
   G = makeGame(DATA);
   G.startRun(meta ? { ...meta } : null);
   G.applySkills();
-  menuOpts = { confirming: false, help: false };
+  menuOpts = { confirming: false, help: false, archive: false };
   writeSave(G);
   route();
   toast(meta ? '新一轮：继承层数与技能' : '第一轮开始');
@@ -206,7 +225,7 @@ function wipeSave() {
   pending = null;
   G = makeGame(DATA);
   G.startRun(null);
-  menuOpts = { confirming: false, help: false };
+  menuOpts = { confirming: false, help: false, archive: false };
   showMenu();
   toast('存档已清空');
 }
@@ -252,7 +271,28 @@ async function devPlay() {
     }
     click('[data-act="toSell"]');
     if (!document.getElementById('sellcanvas')) { const t = document.getElementById('toast'); throw new Error('出摊没渲染: ' + (t ? t.innerText.replace(/\n/g,'/') : '') + ' phase=' + G.s.phase + ' menu=' + G.s.menu.filter(m=>m.onMenu).length); }
-    click('[data-act="skipSell"]');
+    // 出摊：边推进边把 QTE 点掉（模拟会玩的玩家）
+    for (let n = 0; n < 4000; n++) {
+      const S2 = G.s.sell;
+      if (!S2 || S2.done) break;
+      const q = S2.qte;
+      if (q && !q.ended) {
+        if (q.kind === 'pick') {
+          const idx = (q.options || []).findIndex((o) => o.ok);
+          const btn = document.querySelectorAll('[data-act="qtePick"]')[idx];
+          if (btn) btn.click();
+        } else {
+          // 把指针推到绿区中央再点
+          const z = q.zone || [0.44, 0.60];
+          const mid = (z[0] + z[1]) / 2;
+          q.left = Math.round(q.total * (1 - mid));
+          const btn = document.querySelector('[data-act="qteHit"]');
+          if (btn) btn.click();
+        }
+      }
+      G.tick();
+    }
+    if (!(G.s.sell && G.s.sell.done)) click('[data-act="skipSell"]');
     const bonus = document.querySelector('[data-act="bonus"]');
     if (!bonus) throw new Error('结算没出加成卡');
     bonus.click();
@@ -310,6 +350,145 @@ async function menuFlowTest() {
   return 'MENU OK — ' + log.join(' | ');
 }
 
+
+
+
+/* ---------------------------------------------------------------- QTE 定场（?dev=qte2） */
+function qteShowcase(kind) {
+  const S = G.s.sell;
+  if (!S) return 'no sell';
+  // 队列里放两位特殊顾客 + 一位普通
+  const mk = (special, i) => {
+    const c = G.spawnCustomer();
+    c.special = special;
+    c.mood = 'normal';
+    c.state = 'wait';
+    c.typeSeed = i;
+    c.waited = 20;
+    c.patience = 600;
+    c.wantTag = c.wantTag || 'fried';
+    S.customers.push(c);
+    return c;
+  };
+  const c1 = mk('critic', 0);
+  mk('blogger', 1);
+  // 再塞一位普通顾客
+  const c3 = G.spawnCustomer();
+  c3.state = 'wait'; c3.waited = 10; c3.typeSeed = 2;
+  S.customers.push(c3);
+
+  const opts = [
+    { t: '先摆盘、擦净碗边再端上去', ok: true },
+    { t: '直接端上去，热就行', ok: false },
+    { t: '让他自己到灶台前挑', ok: false },
+  ];
+  if (kind === 'pick') {
+    S.qte = {
+      type: 'blogger', name: '探店博主', kind: 'pick',
+      total: 620, left: 470, cust: c1, base: 40, mul: 1.6,
+      rep: 3, failRep: -2, ended: false, ok: false, options: opts,
+    };
+  } else {
+    S.qte = {
+      type: 'critic', name: '美食评论家', kind: 'timing',
+      total: 620, left: Math.round(620 * 0.46), cust: c1, base: 40, mul: 2.2,
+      rep: 4, failRep: -3, ended: false, ok: false, zone: [0.44, 0.60],
+    };
+  }
+  S.banner = { text: '美食评论家：这摊子有点意思', kind: 'ok', until: S.tick + 99999 };
+  return 'showcase ' + kind;
+}
+
+/* ---------------------------------------------------------------- QTE 自测（?dev=qte） */
+function qteFlowTest() {
+  const log = [];
+  const S = () => G.s.sell;
+
+  // 造一个特殊顾客直接进队并成交，触发 QTE
+  const forceQte = (special) => {
+    const c = G.spawnCustomer();
+    c.special = special;
+    c.mood = 'normal';
+    c.state = 'wait';
+    c.typeSeed = 0;
+    c.patience = 100000;
+    S().customers.push(c);
+    return c;
+  };
+
+  // ① timing 类型：指针在绿区时按下 → 成功
+  const before1 = G.s.rep;
+  const c1 = forceQte('critic');
+  S().qte = {
+    type: 'critic', name: '美食评论家', kind: 'timing',
+    total: 620, left: 620, cust: c1, base: 40, mul: 2.2,
+    rep: 4, failRep: -3, ended: false, ok: false, zone: [0.44, 0.60],
+  };
+  // 把指针推到绿区中央（pos ≈ 0.52 → left = 620*0.48 ≈ 298）
+  S().qte.left = Math.round(620 * (1 - 0.52));
+  updateSellStats(G);
+  const hitBtn = document.querySelector('[data-act="qteHit"]');
+  if (!hitBtn) throw new Error('timing QTE 没渲染出「上菜」按钮');
+  const rev0 = S().revenue;
+  hitBtn.click();
+  if (S().qte) throw new Error('点完 QTE 没有清空');
+  if (S().revenue <= rev0) throw new Error('QTE 成功没有加钱');
+  if (G.s.rep <= before1) throw new Error('QTE 成功没有加口碑');
+  log.push(`timing 成功 +¥${(S().revenue - rev0).toFixed(0)} 口碑 ${Math.round(before1)}→${Math.round(G.s.rep)}`);
+
+  // ② pick 类型：选对 → 成功
+  const c2 = forceQte('blogger');
+  const opts = [
+    { t: '擦亮碗边再端上去', ok: true },
+    { t: '直接端上去', ok: false },
+    { t: '让她自己挑', ok: false },
+  ];
+  S().qte = {
+    type: 'blogger', name: '探店博主', kind: 'pick',
+    total: 620, left: 500, cust: c2, base: 40, mul: 1.6,
+    rep: 3, failRep: -2, ended: false, ok: false, options: opts,
+  };
+  updateSellStats(G);
+  const btns = [...document.querySelectorAll('[data-act="qtePick"]')];
+  if (btns.length !== 3) throw new Error('pick QTE 选项数不对：' + btns.length);
+  const rep2 = G.s.rep;
+  btns[0].click();
+  if (!(G.s.rep > rep2)) throw new Error('pick 选对没有加口碑');
+  log.push('pick 成功 +口碑');
+
+  // ③ 失败路径：选错
+  const c3 = forceQte('eater');
+  const rep3 = G.s.rep;
+  S().qte = {
+    type: 'eater', name: '大胃王', kind: 'pick',
+    total: 620, left: 500, cust: c3, base: 40, mul: 2.6,
+    rep: 1, failRep: -1, ended: false, ok: false,
+    options: [{ t: '错的', ok: false }, { t: '对的', ok: true }, { t: '也错', ok: false }],
+  };
+  updateSellStats(G);
+  document.querySelectorAll('[data-act="qtePick"]')[0].click();
+  if (G.s.rep >= rep3) throw new Error('选错没有掉口碑');
+  log.push('pick 失败 -口碑');
+
+  // ④ 超时路径
+  const c4 = forceQte('foodie');
+  const rep4 = G.s.rep;
+  S().qte = {
+    type: 'foodie', name: '老饕', kind: 'timing',
+    total: 620, left: 2, cust: c4, base: 40, mul: 1.9,
+    rep: 3, failRep: -2, ended: false, ok: false, zone: [0.44, 0.60],
+  };
+  for (let i = 0; i < 5; i++) G.tick();
+  if (S().qte) throw new Error('超时后 QTE 没结束');
+  if (G.s.rep >= rep4) throw new Error('超时没有掉口碑');
+  log.push('超时判负 OK');
+
+  // ⑤ 特殊顾客出现在队列里，且渲染不炸
+  if (!S().customers.some((c) => c.special)) throw new Error('特殊顾客没进队列');
+  log.push('特殊顾客入队 OK');
+
+  return 'QTE OK — ' + log.join(' | ');
+}
 
 /* ---------------------------------------------------------------- 购物车自测（?dev=cart） */
 function cartFlowTest() {
@@ -576,7 +755,7 @@ function onClick(ev) {
       raf = 0;
       save();
       pending = loadSave();
-      menuOpts = { confirming: false, help: false };
+      menuOpts = { confirming: false, help: false, archive: false };
       showMenu();
       break;
     }
@@ -617,6 +796,11 @@ function onClick(ev) {
       hud(G);
       break;
     }
+    case 'archive': {
+      menuOpts.archive = true;
+      showMenu();
+      break;
+    }
     case 'help': {
       menuOpts.help = true;
       showMenu();
@@ -624,6 +808,7 @@ function onClick(ev) {
     }
     case 'backMenu': {
       menuOpts.help = false;
+      menuOpts.archive = false;
       menuOpts.confirming = false;
       showMenu();
       break;
@@ -631,6 +816,26 @@ function onClick(ev) {
     case 'toPrep': {
       G.finishStock();
       route();
+      break;
+    }
+    case 'qteHit': {
+      const S = G.s.sell;
+      const q = S && S.qte;
+      if (!q || q.ended) break;
+      const pos = 1 - q.left / q.total;
+      const z = q.zone || [0.44, 0.60];
+      const ok = pos >= z[0] && pos <= z[1];
+      const r = G.resolveQte(ok, ok ? '' : '手慢了');
+      if (r) toast(r.ok ? `${r.name}：好手艺` : `${r.name}：差点意思`);
+      break;
+    }
+    case 'qtePick': {
+      const S = G.s.sell;
+      const q = S && S.qte;
+      if (!q || q.ended) break;
+      const opt = (q.options || [])[+t.dataset.i];
+      const r = G.resolveQte(!!(opt && opt.ok), opt && opt.ok ? '' : '做错了');
+      if (r) toast(r.ok ? `${r.name}：这摊子值得再来` : `${r.name}：就这？`);
       break;
     }
     case 'traitFilter': {

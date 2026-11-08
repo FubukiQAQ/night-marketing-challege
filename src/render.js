@@ -34,6 +34,11 @@ function glow(ctx, cx, cy, r, rgb, alpha) {
   ctx.fill();
 }
 
+const SPECIAL_LABEL = {
+  blogger: '探店博主', critic: '美食评论家', eater: '大胃王',
+  foodie: '老饕', gold_courier: '金主代跑',
+};
+
 let TYPES = null;
 let t = 0;
 
@@ -94,8 +99,36 @@ export function renderSell(ctx, G, dt) {
       if (c.state === 'happy') state = 'happy';
       else if (c.state === 'browse') state = 'walk';
       else if (c.state === 'wait' && c.waited / Math.max(1, c.patience) > 0.6) state = 'urgent';
-      draw(ctx, 'char/chr_customer_' + type + '_' + state + '.png',
-        x, y, LAYOUT.customerW, LAYOUT.customerH);
+
+      if (c.special) {
+        // ---------- 特殊顾客：160×160 立绘 + 金色光环 ----------
+        const sw = 176, sh = 176;
+        const sx = x + LAYOUT.customerW / 2 - sw / 2;
+        const sy = LAYOUT.groundY - sh;
+        const mood = c.mood || 'normal';
+        // 光环（呼吸）
+        const pulse = 0.55 + 0.45 * Math.sin(t * 3 + i);
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        glow(ctx, sx + sw / 2, sy + sh * 0.6, sw * 0.75,
+          mood === 'unhappy' ? '200,90,90' : '255,210,120', 0.10 + pulse * 0.12);
+        ctx.restore();
+        draw(ctx, 'char/chr_special_' + c.special + '_' + mood + '.png', sx, sy, sw, sh);
+        // 名字牌
+        const label = SPECIAL_LABEL[c.special] || '';
+        if (label) {
+          ctx.font = 'bold 15px monospace';
+          ctx.textAlign = 'center';
+          const tw = ctx.measureText(label).width + 14;
+          ctx.fillStyle = 'rgba(12,10,8,0.82)';
+          ctx.fillRect(sx + sw / 2 - tw / 2, sy - 24, tw, 20);
+          ctx.fillStyle = mood === 'unhappy' ? '#ff8f9f' : '#ffd24a';
+          ctx.fillText(label, sx + sw / 2, sy - 9);
+        }
+      } else {
+        draw(ctx, 'char/chr_customer_' + type + '_' + state + '.png',
+          x, y, LAYOUT.customerW, LAYOUT.customerH);
+      }
 
       // 需求气泡
       let mood = 'normal';
@@ -135,6 +168,24 @@ export function renderSell(ctx, G, dt) {
       ctx.fillText(f.text, x, y);
       ctx.globalAlpha = 1;
     });
+  }
+
+  // ---------- QTE 横幅
+  if (S && S.banner) {
+    const b = S.banner;
+    const txt = b.text;
+    ctx.font = 'bold 20px monospace';
+    ctx.textAlign = 'center';
+    const tw = Math.min(W - 80, ctx.measureText(txt).width + 36);
+    const bx = (W - tw) / 2;
+    const by = 34;
+    ctx.fillStyle = b.kind === 'bad' ? 'rgba(70,16,22,0.88)' : 'rgba(52,38,10,0.88)';
+    ctx.fillRect(bx, by, tw, 34);
+    ctx.strokeStyle = b.kind === 'bad' ? '#ff5c7a' : '#ffc93c';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(bx + 1, by + 1, tw - 2, 32);
+    ctx.fillStyle = b.kind === 'bad' ? '#ffb3c0' : '#ffe08a';
+    ctx.fillText(txt, W / 2, by + 23);
   }
 
   // ---------- 灯光层（加法叠加，压在所有东西上面）
