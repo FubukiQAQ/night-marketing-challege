@@ -1,0 +1,75 @@
+{
+  "_note": "新手教程步进。每一步绑定一个动作 id，玩家完成动作即推进。",
+  "title": "试营业 · 新手引导",
+  "intro": "第一次摆摊，跟着走一遍就会了。点右下角可以随时跳过。",
+  "steps": [
+    {
+      "id": "cartAdd",
+      "phase": "STOCK",
+      "target": ".shelf .tile",
+      "title": "① 先备料",
+      "text": "点任意一个方格，把食材放进下面的购物车。点几下就买几份。"
+    },
+    {
+      "id": "cartCommit",
+      "phase": "STOCK",
+      "target": "[data-act=\"cartCommit\"]",
+      "title": "② 结算采购",
+      "text": "购物车里有东西后点「结算采购」。采购吃现金，也吃分钟，别买过头。"
+    },
+    {
+      "id": "toPrep",
+      "phase": "STOCK",
+      "target": "[data-act=\"toPrep\"]",
+      "title": "③ 去备餐",
+      "text": "备够了就点「去备餐」。"
+    },
+    {
+      "id": "toggle",
+      "phase": "PREP",
+      "target": ".food[data-fid=\"{dish}\"] [data-act=\"toggle\"]",
+      "title": "④ 上架一道菜",
+      "text": "在餐品库里点「上架」。同一属性的菜上架够款数，右边的词条就会点亮。"
+    },
+    {
+      "id": "prep",
+      "phase": "PREP",
+      "target": ".food[data-fid=\"{dish}\"] [data-act=\"prep\"]",
+      "title": "⑤ 先做几份",
+      "text": "点「备10份」提前做好。出摊时成品能立刻取走，没备的得现做、要占厨具。"
+    },
+    {
+      "id": "toSell",
+      "phase": "PREP",
+      "target": "[data-act=\"toSell\"]",
+      "title": "⑥ 出摊",
+      "text": "点「出摊」。接下来是 60 秒实时营业，别走开。"
+    },
+    {
+      "id": "served",
+      "phase": "SELL",
+      "target": null,
+      "title": "⑦ 等着收钱",
+      "text": "顾客点单 → 厨具出餐 → 自动结算。上方是剩余时间和营业额。"
+    },
+    {
+      "id": "qte",
+      "phase": "SELL",
+      "target": null,
+      "optional": true,
+      "title": "⑧ 特殊来客",
+      "text": "看到「特殊来客」弹窗时：指针进绿区按「上菜！」，或者三选一里挑对的做法。答对加钱加口碑。"
+    },
+    {
+      "id": "bonus",
+      "phase": "SETTLE",
+      "target": ".bonus",
+      "title": "⑨ 选一个加成",
+      "text": "挑一张卡，本局永久生效。然后进入第二天。"
+    }
+  ],
+  "finish": {
+    "title": "引导结束",
+    "text": "剩下的就交给你了：七天，把这半条街的烟火气撑起来。"
+  }
+}

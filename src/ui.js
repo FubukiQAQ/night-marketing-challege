@@ -224,6 +224,7 @@ export function renderMenu(o) {
       ${d || o.hasMeta ? '' : `<button class="primary big" data-act="newRun">开始第一轮</button>`}
       <button data-act="help">玩法说明</button>
       <button data-act="archive">街坊名录</button>
+      ${o.canTutorial ? '<button data-act="tutRestart">重看新手引导</button>' : ''}
       ${d || o.hasMeta ? `<button class="danger" data-act="wipe">${o.confirming ? '确定清空存档？再点一次' : '清空存档'}</button>` : ''}
     </div>
 
@@ -425,7 +426,7 @@ export function renderPrep(G) {
       const tr = G.DATA.traits.traits.find((x) => x.tag === t);
       return `<span class="tiny" style="color:${tagColor(t)}">${tg ? tg.name : t}${tr && act[tr.id] ? '✓' : ''}</span>`;
     }).join(' ');
-    return `<div class="food ${on ? 'on' : ''}">
+    return `<div class="food ${on ? 'on' : ''}" data-fid="${f.id}">
       <span>${icon(f.sprite, 44)}</span>
       <span>
         <span class="food-name">${f.name} ${tags}${hasUt ? '' : '<span class="warn tiny">缺厨具</span>'}</span>

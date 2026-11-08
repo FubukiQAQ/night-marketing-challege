@@ -1,0 +1,104 @@
+/* ============================================================
+   新手教程：教练卡 + 目标高亮
+   ============================================================ */
+
+#coach {
+  position: fixed;
+  left: 20px;
+  bottom: 132px;
+  z-index: 40;
+  display: none;
+  max-width: 320px;
+  pointer-events: none;
+}
+#coach.on { display: block; }
+
+.coach-card {
+  pointer-events: auto;
+  padding: 10px 14px 12px;
+  border: 12px solid transparent;
+  border-image: url(assets/ui9/ui_panel_light_normal_9slice.png) 16 fill stretch;
+  background: rgba(236, 228, 204, 0.96);
+  color: var(--ink-on-paper);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+  animation: coachIn 0.24s var(--ease) both;
+}
+@keyframes coachIn {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.coach-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.coach-badge {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: #8A5A18;
+}
+.coach-prog {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.coach-title {
+  font-size: 15px;
+  color: var(--ink-on-paper);
+  margin-bottom: 4px;
+}
+.coach-text {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+.coach-acts {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.coach-acts button.small {
+  background: var(--paper-hi);
+  border: 1px solid var(--paper-edge);
+  border-radius: 2px;
+  color: var(--ink-soft);
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+/* ---------- 目标高亮 ---------- */
+.tut-hl {
+  position: relative;
+  outline: 2px solid #FFC93C !important;
+  outline-offset: 2px;
+  animation: tutPulse 1.4s ease-in-out infinite;
+  z-index: 3;
+}
+@keyframes tutPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 201, 60, 0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(255, 201, 60, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tut-hl { animation: none; }
+  .coach-card { animation: none; }
+}
+
+/* ---------- 移动端：贴底横条 ---------- */
+@media (max-width: 768px) {
+  #coach {
+    left: 8px;
+    right: 8px;
+    bottom: 76px;
+    max-width: none;
+  }
+  .coach-card {
+    border-width: 10px;
+    padding: 8px 10px 10px;
+  }
+  .coach-title { font-size: 13px; }
+  .coach-text { font-size: 12px; line-height: 1.55; }
+}

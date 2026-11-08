@@ -3,6 +3,7 @@ import { loadAssets } from './sprites.js';
 import { makeGame, mulberry32 } from './core.js';
 import { loadSave, writeSave, clearSave, describeSave, formatTime } from './save.js';
 import * as Audio from './audio.js';
+import * as Tut from './tutorial.js';
 import { renderSell, resetScene, SCENE } from './render.js';
 import { hud, renderStock, renderPrep, renderSellShell, updateSellStats,
          renderSettle, renderMeta, renderMenu, toast, keepScroll,
@@ -51,6 +52,7 @@ async function boot() {
     loadJSON('src/data/story.json').catch(() => null),
   ]);
   DATA = { tags, traits, foods, ingredients, utensils, balance, story };
+  Tut.initTutorial(await loadJSON('src/data/tutorial.json').catch(() => null));
   await loadAssets();
 
   G = makeGame(DATA);
@@ -60,6 +62,7 @@ async function boot() {
   window.addEventListener('input', onChange);
   Audio.installUnlock();
   Audio.loadTracks();
+  Tut.startPolling(() => G);
 
   const params = new URLSearchParams(location.search);
   const dev = params.get('dev');
@@ -71,11 +74,10 @@ async function boot() {
   }
   if (dev) {
     // 调试入口：直接开局，跳过主菜单
-    if (pending && pending.meta) {
-      G.startRun(pending.meta); G.applySkills();
-    } else {
-      G.startRun(null);
-    }
+    const carryMeta = (pending && pending.meta) ? pending.meta : null;
+    G.startRun(carryMeta);
+    if (carryMeta) G.applySkills();
+    if (!carryMeta || !carryMeta.runs) Tut.enable(G);
     if (dev === 'play') {
       route();
       try { document.title = 'E2E ' + (await devPlay()); }
@@ -87,6 +89,11 @@ async function boot() {
     if (dev === 'width') {
       try { document.title = 'W boot'; await probeWidth(); }
       catch (e) { document.title = 'W FAIL ' + e.message; }
+      return;
+    }
+    if (dev === 'tutorial') {
+      try { document.title = tutorialFlowTest(); }
+      catch (e) { document.title = 'TUTORIAL FAIL ' + e.message; }
       return;
     }
     if (dev === 'qte2') {
@@ -187,8 +194,10 @@ function showMenu() {
     opening: (DATA && DATA.story) ? DATA.story.opening : null,
     archive: menuOpts.archive,
     story: (DATA && DATA.story) || null,
+    canTutorial: !!(G && G.s && G.s.tut < 900) || !!desc,
   });
   mountPlayer();
+  Tut.syncPhase(G);
 }
 
 function continueGame() {
@@ -209,6 +218,7 @@ function startNewRun() {
   G = makeGame(DATA);
   G.startRun(meta ? { ...meta } : null);
   G.applySkills();
+  if (!meta || !meta.runs) Tut.enable(G);
   menuOpts = { confirming: false, help: false, archive: false };
   writeSave(G);
   route();
@@ -399,6 +409,116 @@ function qteShowcase(kind) {
   return 'showcase ' + kind;
 }
 
+
+/* ---------------------------------------------------------------- 新手教程自测（?dev=tutorial） */
+function tutorialFlowTest() {
+  const log = [];
+  const step = () => (G.s.tut | 0);
+  const coachTitle = () => {
+    const el2 = document.querySelector('#coach .coach-title');
+    return el2 ? el2.textContent.trim() : '';
+  };
+  const expect = (n, label) => {
+    if (step() !== n) throw new Error(`${label}：期望第 ${n + 1} 步，实际 ${step() + 1}`);
+    Tut.syncPhase(G); Tut.paint(G);
+  };
+  
+
+  if (!(G.s.tut === 0)) throw new Error('教程没有从第 1 步开始：tut=' + G.s.tut);
+  Tut.syncPhase(G); Tut.paint(G);
+  if (!document.querySelector('#coach.on')) throw new Error('教练卡没显示');
+  if (!document.querySelector('.tut-hl')) throw new Error('没有高亮目标');
+  log.push('① ' + coachTitle());
+
+  // ① 点格子
+  document.querySelector('.shelf .tile').click();
+  expect(1, '点格子');
+  log.push('② ' + coachTitle());
+
+  // ② 结算采购
+  document.querySelector('[data-act="cartCommit"]').click();
+  expect(2, '结算采购');
+
+  // ③ 去备餐
+  document.querySelector('[data-act="toPrep"]').click();
+  if (G.s.phase !== 'PREP') throw new Error('没进备餐：' + G.s.phase);
+  expect(3, '去备餐');
+  log.push('④ ' + coachTitle());
+
+  // ④ 上架（用教程指定的那道菜）
+  const card = document.querySelector('.food[data-fid="' + G.s.tutDish + '"]');
+  if (!card) throw new Error('找不到教学菜卡：' + G.s.tutDish);
+  const toggle = card.querySelector('[data-act="toggle"]');
+  if (!toggle) throw new Error('教学菜没有上架按钮');
+  toggle.click();
+  expect(4, '上架');
+
+  // ⑤ 备几份
+  const card2 = document.querySelector('.food[data-fid="' + G.s.tutDish + '"]');
+  const prepBtn = card2 && card2.querySelector('[data-act="prep"]');
+  if (!prepBtn) throw new Error('上架后没有备餐按钮');
+  prepBtn.click();
+  expect(5, '备份');
+  const preN = (G.s.premade[G.s.tutDish] || {}).n || 0;
+  if (preN <= 0) throw new Error('备份后没有成品，教学菜=' + G.s.tutDish);
+  log.push('⑥ ' + coachTitle());
+
+  // ⑥ 出摊
+  document.querySelector('[data-act="toSell"]').click();
+  if (G.s.phase !== 'SELL') throw new Error('没进招摊：' + G.s.phase);
+  expect(6, '出摊');
+  log.push('⑦ ' + coachTitle());
+
+  // ⑦ 等成交
+  let guard = 0;
+  while (step() === 6 && guard++ < 3000) {
+    const q = G.s.sell.qte;
+    if (q && !q.ended) G.resolveQte(true);
+    G.tick();
+    if (G.s.sell.served > 0) Tut.advance(G, 'served');
+    Tut.syncPhase(G); Tut.paint(G);
+  }
+  if (step() === 6) throw new Error('等不到成交 tut=' + step()
+    + ' phase=' + G.s.phase
+    + ' served=' + (G.s.sell ? G.s.sell.served : 'nosell')
+    + ' cust=' + (G.s.sell ? G.s.sell.customers.length : '-')
+    + ' tick=' + (G.s.sell ? G.s.sell.tick : '-')
+    + ' menu=' + G.s.menu.filter((m) => m.onMenu).length + ' lost=' + (G.s.sell ? G.s.sell.lost : '-') + ' pre=' + JSON.stringify(G.s.premade) + ' cap=' + (G.s.sell ? G.s.sell.queueCap : '-'));
+  log.push('⑧ ' + coachTitle());
+
+  // ⑧ 特殊来客：造一个 QTE 并答对
+  if (step() === 7) {
+    const c = G.spawnCustomer();
+    c.special = 'critic'; c.state = 'wait'; c.typeSeed = 0; c.patience = 99999;
+    G.s.sell.customers.push(c);
+    G.s.sell.qte = {
+      type: 'critic', name: '美食评论家', kind: 'timing',
+      total: 620, left: 300, cust: c, base: 40, mul: 2.2,
+      rep: 4, failRep: -3, ended: false, ok: false, zone: [0.44, 0.60],
+    };
+    Tut.syncPhase(G); Tut.paint(G);
+    const btn = document.querySelector('[data-act="qteHit"]');
+    if (btn) btn.click(); else G.resolveQte(true);
+    log.push('⑨ ' + coachTitle());
+  }
+
+  // ⑨ 打完收工 → 结算选卡
+  while (!G.s.sell.done && guard++ < 20000) G.tick();
+  finishSell();
+  if (G.s.phase !== 'SETTLE') throw new Error('没进结算：' + G.s.phase);
+  Tut.syncPhase(G); Tut.paint(G);
+  const bonus = document.querySelector('[data-act="bonus"]');
+  if (!bonus) throw new Error('结算没出加成卡');
+  const before = step();
+  bonus.click();
+  if (step() <= before) throw new Error('选卡后教程没结束');
+  if (step() < Tut.stepCount()) throw new Error('教程没走到结尾：' + step() + '/' + Tut.stepCount());
+  if (document.querySelector('#coach.on')) throw new Error('教程结束后教练卡还在');
+  log.push('全部 ' + Tut.stepCount() + ' 步完成');
+
+  return 'TUTORIAL OK — ' + log.join(' | ');
+}
+
 /* ---------------------------------------------------------------- QTE 自测（?dev=qte） */
 function qteFlowTest() {
   const log = [];
@@ -566,7 +686,7 @@ async function probeWidth() {
 }
 /* ---------------------------------------------------------------- 开发用自动推进 */
 function devAuto(mode) {
-  if (mode === 'stock' || mode === 'cart') return;   // 停在备货阶段，方便截图/调试
+  if (mode === 'stock' || mode === 'cart' || mode === 'tutorial') return;   // 停在备货阶段，方便截图/调试
   const core = ['potato', 'rice', 'flour', 'egg', 'chicken_steak', 'starch_sausage',
     'veg_mixed', 'condiment', 'ice', 'cola'];
   core.forEach((ing) => {
@@ -679,6 +799,7 @@ function loop() {
     G.tick();
     tickAcc -= 1;
   }
+  if (S.served > 0) Tut.advance(G, 'served');   // 教程：第一次有成交就推进
   renderSell(ctx, G, dt * speed);
   updateSellStats(G);
   raf = requestAnimationFrame(loop);
@@ -706,6 +827,7 @@ function onClick(ev) {
     }
     case 'cartAdd': {
       addToCart(+t.dataset.s, +t.dataset.i);
+      Tut.advance(G, 'cartAdd');
       keepScroll(() => renderStock(G));
       break;
     }
@@ -720,6 +842,7 @@ function onClick(ev) {
       break;
     }
     case 'cartCommit': {
+      Tut.advance(G, 'cartCommit');
       const lines = cartLines(G);
       if (!lines.length) { toast('购物车是空的'); break; }
       let done = 0, fail = null;
@@ -796,6 +919,18 @@ function onClick(ev) {
       hud(G);
       break;
     }
+    case 'tutSkip': {
+      Tut.disable(G);
+      toast('已跳过新手引导');
+      save();
+      break;
+    }
+    case 'tutRestart': {
+      Tut.restart(G);
+      route();
+      save();
+      break;
+    }
     case 'archive': {
       menuOpts.archive = true;
       showMenu();
@@ -814,6 +949,7 @@ function onClick(ev) {
       break;
     }
     case 'toPrep': {
+      Tut.advance(G, 'toPrep');
       G.finishStock();
       route();
       break;
@@ -825,6 +961,7 @@ function onClick(ev) {
       const pos = 1 - q.left / q.total;
       const z = q.zone || [0.44, 0.60];
       const ok = pos >= z[0] && pos <= z[1];
+      Tut.advance(G, 'qte');
       const r = G.resolveQte(ok, ok ? '' : '手慢了');
       if (r) toast(r.ok ? `${r.name}：好手艺` : `${r.name}：差点意思`);
       break;
@@ -834,6 +971,7 @@ function onClick(ev) {
       const q = S && S.qte;
       if (!q || q.ended) break;
       const opt = (q.options || [])[+t.dataset.i];
+      Tut.advance(G, 'qte');
       const r = G.resolveQte(!!(opt && opt.ok), opt && opt.ok ? '' : '做错了');
       if (r) toast(r.ok ? `${r.name}：这摊子值得再来` : `${r.name}：就这？`);
       break;
@@ -844,12 +982,14 @@ function onClick(ev) {
       break;
     }
     case 'toggle': {
+      Tut.advance(G, 'toggle');
       const v = G.toggleMenu(t.dataset.f);
       if (v.issues.some((i) => i.level === 'error')) toast(v.issues.find((i) => i.level === 'error').msg);
       hud(G); keepScroll(() => renderPrep(G)); save();
       break;
     }
     case 'prep': {
+      Tut.advance(G, 'prep');
       // 尽量备到食材上限（每次 10 份）
       const f = G.FOOD[t.dataset.f];
       const can = G.rawCapacity(f);
@@ -862,6 +1002,7 @@ function onClick(ev) {
       break;
     }
     case 'toSell': {
+      Tut.advance(G, 'toSell');
       const v = G.validateMenu();
       const err = v.issues.find((i) => i.level === 'error');
       if (err) { toast(err.msg); break; }
@@ -882,6 +1023,7 @@ function onClick(ev) {
       break;
     }
     case 'bonus': {
+      Tut.advance(G, 'bonus');
       G.chooseBonus(t.dataset.b);
       const r = G.nextDay();
       if (r.runOver) { G.s.phase = 'META'; }
