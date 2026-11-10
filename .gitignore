@@ -49,3 +49,7 @@ tools/_*.py
 tools/__pycache__/
 _d-*/
 _dm/
+
+# 提交包（本地生成，不入库）
+dist/
+_subtest/

@@ -47,9 +47,9 @@ export function makeGame(DATA) {
       desc: '一口气点了三份，催你快点出',
     },
     foodie: {
-      name: '老饕', need: ['madedish', 'grilled', 'braised'],
-      mul: 1.9, rep: 3, failRep: -2, kind: 'timing',
-      desc: '只认现做的锅气，凉了就摇头',
+      name: '炸货老饕', need: ['fried', 'madedish', 'grilled'],
+      mul: 1.9, rep: 3, failRep: -2, kind: 'rhythm',
+      desc: '站你锅边看火候，颠勺的手艺瞒不过他',
     },
     gold_courier: {
       name: '金主代跑', need: null,
@@ -736,7 +736,21 @@ export function makeGame(DATA) {
     // QTE 倒计时：超时算没接住
     if (S.qte && !S.qte.ended) {
       S.qte.left--;
-      if (S.qte.left <= 0) G.resolveQte(false, '没来得及', true);
+      // 节奏类：拍点过去了还没点，记一次漏
+      if (S.qte.kind === 'rhythm') {
+        const q = S.qte;
+        const p = 1 - Math.max(0, q.left) / q.total;
+        while ((q.beatIndex || 0) < q.beats.length
+          && p > q.beats[q.beatIndex] + q.tol) {
+          q.flash[q.beatIndex] = 'miss';
+          q.misses = (q.misses || 0) + 1;
+          q.beatIndex = (q.beatIndex || 0) + 1;
+        }
+        if ((q.beatIndex || 0) >= q.beats.length) {
+          G.finishRhythm();
+        }
+      }
+      if (S.qte && S.qte.left <= 0) G.resolveQte(false, '没来得及', true);
     }
     // 彩带/横幅超时清理
     if (S.banner && T >= S.banner.until) S.banner = null;
@@ -881,14 +895,51 @@ export function makeGame(DATA) {
     return cust;
   };
 
-  /** 连点类 QTE：点一次 +1，点够就成功 */
+  /** 连点 / 节奏：点一下走一次判定 */
   G.qteTap = function () {
     const S = G.s.sell;
     const q = S && S.qte;
-    if (!q || q.ended || q.kind !== 'mash') return null;
-    q.hits = (q.hits || 0) + 1;
-    if (q.hits >= q.need) return G.resolveQte(true);
-    return { hit: q.hits, need: q.need, done: false };
+    if (!q || q.ended) return null;
+
+    if (q.kind === 'mash') {
+      q.hits = (q.hits || 0) + 1;
+      if (q.hits >= q.need) return G.resolveQte(true);
+      return { hit: q.hits, need: q.need, done: false };
+    }
+
+    if (q.kind === 'rhythm') {
+      const p = 1 - Math.max(0, q.left) / q.total;
+      const i = q.beatIndex || 0;
+      if (i >= q.beats.length) return null;
+      const dist = Math.abs(p - q.beats[i]);
+      if (dist <= q.tol) {
+        q.hits = (q.hits || 0) + 1;
+        q.flash[i] = 'hit';
+      } else {
+        // 点早了：算一次失误，但不推进到下一个拍点，让他还有机会
+        q.misses = (q.misses || 0) + 1;
+        return { done: false, early: true, hits: q.hits, index: i };
+      }
+      q.beatIndex = i + 1;
+      if (q.beatIndex >= q.beats.length) return G.finishRhythm();
+      return { done: false, hits: q.hits, index: q.beatIndex };
+    }
+    return null;
+  };
+
+  /** 节奏判定收尾：3 拍全中满额，2 拍减半，1 拍及以下算失败 */
+  G.finishRhythm = function () {
+    const S = G.s.sell;
+    const q = S && S.qte;
+    if (!q || q.ended) return null;
+    const hits = q.hits || 0;
+    if (hits >= 3) return G.resolveQte(true, null);
+    if (hits === 2) {
+      // 命中两拍：给一半溢价，但仍算接住
+      q.mul = 1 + (q.mul - 1) * 0.5;
+      return G.resolveQte(true, null);
+    }
+    return G.resolveQte(false, `火候差了点（中 ${hits}/3）`);
   };
 
   /** 玩家接下 QTE。ok=true 成功，false 失败（超时也走这里） */
@@ -1127,6 +1178,14 @@ export function makeGame(DATA) {
             const tmp = opts[i]; opts[i] = opts[j]; opts[j] = tmp;
           }
           qte.options = opts;
+        } else if (sp.kind === 'rhythm') {
+          // 节奏：窗口内三个拍点，落点越准越好
+          qte.beats = [0.22, 0.50, 0.78];
+          qte.beatIndex = 0;
+          qte.hits = 0;
+          qte.misses = 0;
+          qte.tol = G.B.qteRhythmTol != null ? G.B.qteRhythmTol : 0.085;
+          qte.flash = [];        // 每个拍点的判定结果：'hit' / 'miss'
         } else {
           // 时机：绿区在中间偏右，位置由 left 推出来
           qte.zone = [0.44, 0.60];

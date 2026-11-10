@@ -190,6 +190,22 @@ async function boot() {
       route();
       return;
     }
+    if (dev === 'qte2rhythm') {
+      devAuto('sell2');
+      const c = G.spawnCustomer();
+      c.special = 'foodie';
+      c.mood = 'normal';
+      G.s.sell.customers.unshift(c);
+      G.s.sell.qte = {
+        type: 'foodie', name: '炸货老饕', kind: 'rhythm',
+        total: 620, left: 383, cust: c,
+        base: 40, mul: 1.9, rep: 3, failRep: -2, ended: false, ok: false,
+        beats: [0.22, 0.5, 0.78], beatIndex: 1, hits: 1, misses: 0,
+        tol: 0.085, flash: ['hit'],
+      };
+      route();
+      return;
+    }
     if (dev === 'qte2mash' || dev === 'qte2math') {
       devAuto('sell2');
       const kind = dev === 'qte2mash' ? 'mash' : 'math';
@@ -1061,7 +1077,64 @@ function qteFlowTest() {
   if (!(G.s.rep > repM)) throw new Error('算账选对没加口碑');
   log.push('算账 OK（选对 +口碑）');
 
-  // ⑦ 特殊顾客出现在队列里，且渲染不炸
+  // ⑦ 节奏：三个拍点全中 → 成功
+  const c7 = forceQte('foodie');
+  const mkRhythm = (base, mul) => ({
+    type: 'foodie', name: '炸货老饕', kind: 'rhythm',
+    total: 620, left: 620, cust: base, base: 40, mul: mul || 1.9,
+    rep: 3, failRep: -2, ended: false, ok: false,
+    beats: [0.22, 0.5, 0.78], beatIndex: 0, hits: 0, misses: 0,
+    tol: 0.085, flash: [],
+  });
+  S().qte = mkRhythm(c7);
+  updateSellStats(G);
+  if (!document.querySelector('.qte-lane.rhythm')) throw new Error('节奏 QTE 没渲染出轨道');
+  // 在三个拍点各点一次
+  [0.22, 0.5, 0.78].forEach((b) => {
+    const q = S().qte;
+    if (!q) return;
+    q.left = Math.round(q.total * (1 - b));
+    G.qteTap();
+  });
+  if (S().qte) throw new Error('三拍全中还没结束：' + JSON.stringify(S().qte.beatIndex));
+  log.push('节奏 3/3 OK');
+
+  // ⑧ 节奏：只中两拍 → 仍算接住，但溢价减半
+  const c8 = forceQte('foodie');
+  S().qte = mkRhythm(c8);
+  [0.22, 0.5].forEach((b) => {
+    const q = S().qte;
+    if (!q) return;
+    q.left = Math.round(q.total * (1 - b));
+    G.qteTap();
+  });
+  // 第三拍故意错过：把时间推过去（需 ~174 tick 才到 0.78）
+  if (S().qte) {
+    for (let i = 0; i < 400 && S().qte; i++) G.tick();
+  }
+  if (S().qte) throw new Error('第三拍漏了还没结束');
+  log.push('节奏 2/3 OK（减半）');
+
+  // ⑨ 节奏：一拍不中 → 失败
+  const c9 = forceQte('foodie');
+  S().qte = mkRhythm(c9);
+  const rep9 = G.s.rep;
+  for (let i = 0; i < 700 && S().qte; i++) G.tick();
+  if (S().qte) throw new Error('一拍没中还没结束');
+  if (!(G.s.rep <= rep9)) throw new Error('全漏了口碑没掉');
+  log.push('节奏 0/3 判负 OK');
+
+  // ⑩ 节奏：点早了不算命中
+  const c10 = forceQte('foodie');
+  S().qte = mkRhythm(c10);
+  S().qte.left = Math.round(S().qte.total * (1 - 0.05));   // 离第一拍还早
+  const r10 = G.qteTap();
+  if (!r10 || !r10.early) throw new Error('点早了没判早');
+  if ((S().qte.hits || 0) !== 0) throw new Error('点早了却算命中');
+  log.push('节奏点早判早 OK');
+  S().qte = null;
+
+  // ⑪ 特殊顾客出现在队列里，且渲染不炸
   if (!S().customers.some((c) => c.special)) throw new Error('特殊顾客没进队列');
   log.push('特殊顾客入队 OK');
 

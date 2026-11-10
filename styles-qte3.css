@@ -1,0 +1,53 @@
+/* ============================================================
+   节奏颠勺
+   ============================================================ */
+
+.qte-lane.rhythm {
+  position: relative;
+  height: 34px;
+  margin: 4px 0 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+/* 当前拍点的可击区 */
+.qte-lane.rhythm .rhythm-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(110, 231, 168, 0.22);
+  border-left: 1px solid rgba(110, 231, 168, 0.55);
+  border-right: 1px solid rgba(110, 231, 168, 0.55);
+}
+
+/* 拍点标记 */
+.qte-lane.rhythm .beat {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  margin-left: -0.5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+}
+.qte-lane.rhythm .beat.wait { background: rgba(255, 255, 255, 0.28); }
+.qte-lane.rhythm .beat.now {
+  background: #FFDE00;
+  box-shadow: 0 0 0 3px rgba(255, 222, 0, 0.22);
+}
+.qte-lane.rhythm .beat.hit { background: #6EE7A8; }
+.qte-lane.rhythm .beat.miss { background: rgba(255, 92, 122, 0.75); }
+
+/* 指针 */
+.qte-lane.rhythm .rhythm-pointer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: #F7EEDD;
+  box-shadow: 0 0 6px rgba(247, 238, 221, 0.7);
+}

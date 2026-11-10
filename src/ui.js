@@ -721,7 +721,8 @@ function renderQte(G) {
   }
 
   // 只在数值变化时重绘（每 tick 一次，别每帧刷）
-  const key = q.type + ':' + q.left + ':' + (q.hits || 0) + ':' + (q.ended ? '1' : '0');
+  const key = q.type + ':' + q.left + ':' + (q.hits || 0) + ':'
+    + (q.beatIndex || 0) + ':' + (q.ended ? '1' : '0');
   if (host.dataset.k === key) return;
   host.dataset.k = key;
   host.dataset.on = '1';
@@ -731,6 +732,36 @@ function renderQte(G) {
   const ratio = Math.max(0, q.left / q.total);
   const pos = 1 - ratio;                 // 指针位置 0..1
   const secs = Math.max(0, q.left / 200).toFixed(1);
+
+  if (q.kind === 'rhythm') {
+    const beats = q.beats || [0.22, 0.5, 0.78];
+    const tol = q.tol || 0.085;
+    const hits = q.hits || 0;
+    const idx = q.beatIndex || 0;
+    // 拍点：判过的按结果上色，当前的可击，之后的是待命
+    const marks = beats.map((b, i) => {
+      const st = q.flash && q.flash[i] ? q.flash[i] : (i < idx ? 'miss' : (i === idx ? 'now' : 'wait'));
+      return `<i class="beat ${st}" style="left:${(b * 100).toFixed(1)}%"></i>`;
+    }).join('');
+    // 判定区（当前拍点的容差带）
+    const zl = Math.max(0, (beats[idx] != null ? beats[idx] : 0) - tol);
+    const zw = tol * 2;
+    host.innerHTML = `
+      <div class="qte">
+        <div class="qte-head">
+          <b>${q.name}</b>
+          <span>颠勺看火候 · 中 ${hits} / ${beats.length} · ${secs}s</span>
+        </div>
+        <div class="qte-timer"><i style="width:${(ratio * 100).toFixed(1)}%"></i></div>
+        <div class="qte-lane rhythm">
+          <i class="rhythm-zone" style="left:${(zl * 100).toFixed(1)}%;width:${(zw * 100).toFixed(1)}%"></i>
+          ${marks}
+          <i class="rhythm-pointer" style="left:${(pos * 100).toFixed(1)}%"></i>
+        </div>
+        <button class="qte-btn qte-mash-btn" data-act="qteTap">颠！</button>
+      </div>`;
+    return;
+  }
 
   if (q.kind === 'mash') {
     const hits = q.hits || 0;
