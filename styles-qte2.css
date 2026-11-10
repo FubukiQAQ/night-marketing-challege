@@ -1,0 +1,73 @@
+/* ============================================================
+   连点催单 / 算账找零
+   ============================================================ */
+
+.qte-mash {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.qte-mash-bar {
+  flex: 1 1 auto;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.qte-mash-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #6ee7a8, #ffc93c);
+  transition: width 0.06s linear;
+}
+.qte-mash-num {
+  flex: 0 0 auto;
+  font-size: 13px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 连点按钮：做得大、反应快，方便手指连击 */
+.qte-mash-btn {
+  min-height: 56px;
+  font-size: 18px;
+  letter-spacing: 0.1em;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.qte-mash-btn:active {
+  transform: scale(0.97);
+  filter: brightness(0.9);
+}
+
+/* 算账 */
+.qte-math {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #C9C0AC;
+}
+.qte-math b { color: #FFD24A; font-weight: normal; }
+.qte-math-q { color: #F7EEDD; }
+
+.qte-opts.math {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.qte-opt.math {
+  text-align: center;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  min-height: 48px;
+}
+
+@media (max-width: 768px) {
+  .qte-mash-btn { min-height: 62px; font-size: 19px; }
+  .qte-opt.math { min-height: 52px; font-size: 17px; }
+}

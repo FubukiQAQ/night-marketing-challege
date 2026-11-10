@@ -223,7 +223,7 @@ export function renderSell(ctx, G, dt) {
   if (S) {
     const list = S.customers.slice(0, LAYOUT.maxQueue);
     list.forEach((c, i) => {
-      const type = TYPES && TYPES.length ? TYPES[(c.typeSeed || i) % TYPES.length] : 'student';
+      const type = c.ctype || (TYPES && TYPES.length ? TYPES[(c.typeSeed || i) % TYPES.length] : 'student');
       const x = LAYOUT.queueX0 + i * LAYOUT.queueStep;
       const y = LAYOUT.groundY - LAYOUT.customerH;
       let state = 'wait';
@@ -259,6 +259,17 @@ export function renderSell(ctx, G, dt) {
       } else {
         draw(ctx, 'char/chr_customer_' + type + '_' + state + '.png',
           x, y, LAYOUT.customerW, LAYOUT.customerH);
+        // 熟客：头顶一颗小星
+        const rlv = c.ctype && G.s.regulars && G.s.regulars[c.ctype]
+          ? G.s.regulars[c.ctype].lv : 0;
+        if (rlv > 0) {
+          ctx.save();
+          ctx.font = 'bold 13px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = rlv >= 3 ? '#FFD24A' : '#E8B060';
+          ctx.fillText('★'.repeat(Math.min(3, rlv)), x + LAYOUT.customerW / 2, y - 6);
+          ctx.restore();
+        }
       }
 
       // 需求气泡

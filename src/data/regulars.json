@@ -1,0 +1,23 @@
+{
+  "_note": "熟客：服务好评会升级，固定爱吃某个属性；连续两天没上他爱吃的菜会掉级。",
+  "types": [
+    { "id": "student", "name": "学生", "favTag": "fast" },
+    { "id": "worker", "name": "夜班工人", "favTag": "staple" },
+    { "id": "runner", "name": "外卖骑手", "favTag": "fast" },
+    { "id": "courier", "name": "跑腿的", "favTag": "madedish" },
+    { "id": "couple", "name": "情侣", "favTag": "dessert" },
+    { "id": "elder", "name": "老街坊", "favTag": "soup" },
+    { "id": "drunk", "name": "喝多了的", "favTag": "grilled" },
+    { "id": "child", "name": "小孩", "favTag": "fried" }
+  ],
+  "levels": [
+    { "lv": 0, "weight": 1.0, "patience": 1.0, "pay": 1.0 },
+    { "lv": 1, "weight": 1.35, "patience": 1.15, "pay": 1.06 },
+    { "lv": 2, "weight": 1.8, "patience": 1.3, "pay": 1.12 },
+    { "lv": 3, "weight": 2.3, "patience": 1.5, "pay": 1.18 }
+  ],
+  "maxLevel": 3,
+  "upgradeSat": 4.3,
+  "upgradeChance": 0.5,
+  "missLimit": 2
+}

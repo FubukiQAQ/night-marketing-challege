@@ -1,0 +1,46 @@
+/* ============================================================
+   熟客面板
+   ============================================================ */
+
+.prep-reg-panel .panel-title { color: #E8B060; }
+
+.reg-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+}
+.reg-row:last-child { border-bottom: 0; }
+
+.reg-lv {
+  flex: 0 0 auto;
+  color: #FFD24A;
+  letter-spacing: -1px;
+  font-size: 11px;
+}
+.reg-name {
+  flex: 0 0 auto;
+  color: var(--text);
+  min-width: 52px;
+}
+.reg-fav {
+  flex: 1 1 auto;
+  text-align: right;
+  color: var(--dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reg-fav.ok { color: #8FE9B8; }
+.reg-fav.bad { color: #FF9BAC; }
+
+.reg-row.miss { opacity: 0.72; }
+
+.reg-news {
+  font-size: 11px;
+  color: #FF9BAC;
+  padding: 2px 0 4px;
+  line-height: 1.4;
+}

@@ -38,18 +38,13 @@ export function makeGame(DATA) {
     },
     critic: {
       name: '美食评论家', need: ['braised', 'soup', 'grilled'],
-      mul: 2.2, rep: 4, failRep: -3, kind: 'timing',
-      desc: '嘴上不留情，但一句话能带来客流',
+      mul: 2.2, rep: 4, failRep: -3, kind: 'math',
+      desc: '结账时递来一张大钞，看你算不算得清',
     },
     eater: {
       name: '大胃王', need: null,
-      mul: 2.6, rep: 1, failRep: -1, kind: 'pick',
-      desc: '一个人点三份，吃完还要打包',
-      picks: [
-        { t: '提醒他还有一份主食没上', ok: true },
-        { t: '照单上菜，别的不管', ok: false },
-        { t: '劝他少点一些', ok: false },
-      ],
+      mul: 2.6, rep: 1, failRep: -1, kind: 'mash',
+      desc: '一口气点了三份，催你快点出',
     },
     foodie: {
       name: '老饕', need: ['madedish', 'grilled', 'braised'],
@@ -62,6 +57,13 @@ export function makeGame(DATA) {
       desc: '一口气打包十份，赶时间',
     },
   };
+
+  // ---------------------------------------------------------------- 熟客
+  const REG = DATA.regulars || { types: [], levels: [], maxLevel: 3 };
+  const REG_TYPES = REG.types || [];
+  const regDef = (id) => REG_TYPES.find((x) => x.id === id) || null;
+  const regLv = (lv) => (REG.levels || [])[Math.max(0, Math.min((REG.levels || []).length - 1, lv || 0))]
+    || { weight: 1, patience: 1, pay: 1 };
 
   const B = DATA.balance;
   const num = (k, d) => (typeof B[k] === 'number' ? B[k] : d);
@@ -191,6 +193,7 @@ export function makeGame(DATA) {
       history: [],
       bonusPicked: [],
       signature: null,          // 招牌菜 foodId：一轮内不可更换
+      regulars: {},             // ctype -> { lv, favTag, miss }
       weather: 'clear',
       events: [],
       eventMods: null,
@@ -222,6 +225,10 @@ export function makeGame(DATA) {
     s.sell = null;
 
     // 天气 / 随机事件 / 同行：必须在 rng 与供应商就位之后、menu 就位之后
+    // 熟客：昨天没上他爱吃的菜，记一次失望
+    const regNews = G.tickRegulars();
+    s.regularNews = regNews;
+
     if (typeof DAYMODS !== 'undefined' && DAYMODS) {
       DAYMODS.rollWeather(G);
       DAYMODS.rollStockEvents(G);
@@ -757,6 +764,55 @@ export function makeGame(DATA) {
     if (T >= maxT) G.endSell();
   };
 
+  /** 熟客档位（0 = 还不算熟客） */
+  G.regularOf = function (ctype) {
+    const r = G.s.regulars && G.s.regulars[ctype];
+    return r ? r : { lv: 0, favTag: (regDef(ctype) || {}).favTag || null, miss: 0 };
+  };
+
+  /** 服务很好 → 有概率升一级熟客 */
+  G.tryUpgradeRegular = function (ctype, sat) {
+    const s = G.s;
+    if (!ctype || !regDef(ctype)) return null;
+    if (sat < (REG.upgradeSat || 4.3)) return null;
+    s.regulars = s.regulars || {};
+    const cur = s.regulars[ctype] || {
+      lv: 0, favTag: (regDef(ctype) || {}).favTag || null, miss: 0,
+    };
+    if (cur.lv >= (REG.maxLevel || 3)) return null;
+    // 每天最多升一级，避免一晚刷满
+    if (cur.lastUpDay === s.day) return null;
+    if (G.rng() > (REG.upgradeChance || 0.5)) return null;
+    cur.lv += 1;
+    cur.lastUpDay = s.day;
+    cur.miss = 0;
+    s.regulars[ctype] = cur;
+    return cur;
+  };
+
+  /** 每天开门：熟客爱吃的菜不在菜单上就记一次失望，连记两次掉级 */
+  G.tickRegulars = function () {
+    const s = G.s;
+    if (!s.regulars) return [];
+    const out = [];
+    const limit = REG.missLimit || 2;
+    Object.keys(s.regulars).forEach((id) => {
+      const r = s.regulars[id];
+      if (!r || !r.lv) return;
+      const tag = r.favTag;
+      const on = tag ? G.menuCount(tag) : 1;
+      if (on > 0) { r.miss = 0; return; }
+      r.miss = (r.miss || 0) + 1;
+      if (r.miss >= limit) {
+        r.lv = Math.max(0, r.lv - 1);
+        r.miss = 0;
+        s.rep = Math.max(0, s.rep - 1);
+        out.push({ id, name: (regDef(id) || {}).name || id, lv: r.lv });
+      }
+    });
+    return out;
+  };
+
   G.spawnCustomer = function () {
     const s = G.s;
     const onMenu = s.menu.filter((m) => m.onMenu);
@@ -774,11 +830,36 @@ export function makeGame(DATA) {
     let r = G.rng() * total;
     let wantTag = keys[0] || 'fast';
     for (const k of keys) { r -= w[k]; if (r <= 0) { wantTag = k; break; } }
+    // 顾客类型：熟客等级高的类型更容易出现
+    let ctype = null;
+    if (REG_TYPES.length) {
+      const ws = REG_TYPES.map((x) => {
+        const r = (G.s.regulars && G.s.regulars[x.id]) || null;
+        return regLv(r ? r.lv : 0).weight;
+      });
+      const tot = ws.reduce((a, b) => a + b, 0) || 1;
+      let rr = G.rng() * tot;
+      for (let i = 0; i < REG_TYPES.length; i++) {
+        rr -= ws[i];
+        if (rr <= 0) { ctype = REG_TYPES[i].id; break; }
+      }
+      if (!ctype) ctype = REG_TYPES[REG_TYPES.length - 1].id;
+    }
+
+    const reg = ctype ? G.regularOf(ctype) : { lv: 0, favTag: null };
+    const lvDef = regLv(reg.lv);
+
+    // 熟客会更想点自己爱吃的
+    if (reg.favTag && keys.includes(reg.favTag)) {
+      const p = 0.3 + reg.lv * 0.18;
+      if (G.rng() < p) wantTag = reg.favTag;
+    }
+
     const cust = {
-      state: 'browse', age: 0, wantTag,
-      patience: G.B.patience * (0.7 + G.rng() * 0.6),
+      state: 'browse', age: 0, wantTag, ctype,
+      patience: G.B.patience * (0.7 + G.rng() * 0.6) * (lvDef.patience || 1),
       waited: 0,
-      budget: 30 + G.rng() * 60,
+      budget: (30 + G.rng() * 60) * (lvDef.pay || 1),
     };
 
     // 特殊顾客：小概率出现，更挑也更值钱
@@ -798,6 +879,16 @@ export function makeGame(DATA) {
       }
     }
     return cust;
+  };
+
+  /** 连点类 QTE：点一次 +1，点够就成功 */
+  G.qteTap = function () {
+    const S = G.s.sell;
+    const q = S && S.qte;
+    if (!q || q.ended || q.kind !== 'mash') return null;
+    q.hits = (q.hits || 0) + 1;
+    if (q.hits >= q.need) return G.resolveQte(true);
+    return { hit: q.hits, need: q.need, done: false };
   };
 
   /** 玩家接下 QTE。ok=true 成功，false 失败（超时也走这里） */
@@ -969,6 +1060,16 @@ export function makeGame(DATA) {
     S.satSum += sat; S.satN++;
     if (sat < 3) S.complaints++;
     S.floaters.push({ kind: 'money', text: `+¥${price.toFixed(1)}`, age: 0 });
+
+    // 熟客：服务够好就升一级
+    if (job.cust && job.cust.ctype && !job.cust.special) {
+      const up = G.tryUpgradeRegular(job.cust.ctype, sat);
+      if (up) {
+        const nm = (regDef(job.cust.ctype) || {}).name || job.cust.ctype;
+        S.floaters.push({ kind: 'tier', text: `${nm} 成了熟客 Lv.${up.lv}`, age: 0 });
+        S.banner = { text: `${nm}：以后常来`, kind: 'ok', until: S.tick + 130 };
+      }
+    }
     if (job.cust) {                                   // 成交后短暂停留再离开
       job.cust.state = 'happy';
       job.cust.happyUntil = S.tick + 45;
@@ -995,6 +1096,32 @@ export function makeGame(DATA) {
         if (sp.kind === 'pick') {
           // 打乱选项顺序，避免每次都点同一个位置
           const opts = sp.picks.map((p) => ({ t: p.t, ok: p.ok }));
+          for (let i = opts.length - 1; i > 0; i--) {
+            const j = Math.floor(G.rng() * (i + 1)) % (i + 1);
+            const tmp = opts[i]; opts[i] = opts[j]; opts[j] = tmp;
+          }
+          qte.options = opts;
+        } else if (sp.kind === 'mash') {
+          // 连点：窗口内点够次数
+          qte.hits = 0;
+          qte.need = G.B.qteMashNeed != null ? G.B.qteMashNeed : 12;
+        } else if (sp.kind === 'math') {
+          // 算账：给大钞，选正确找零
+          const bill = [20, 50, 100][Math.floor(G.rng() * 3) % 3];
+          const paid = Math.round(price * 2) / 2;
+          const change = Math.max(0.5, Math.round((bill - paid) * 2) / 2);
+          qte.bill = bill;
+          qte.paid = paid;
+          qte.change = change;
+          // 正确答案 + 3 个干扰项
+          const set = new Set([change]);
+          const offs = [change + 5, change - 5, change + 10, change - 2.5, change * 2];
+          offs.forEach((o) => {
+            if (set.size >= 4) return;
+            const v = Math.round(o * 2) / 2;
+            if (v > 0) set.add(v);
+          });
+          const opts = [...set].map((v) => ({ v, ok: Math.abs(v - change) < 0.01 }));
           for (let i = opts.length - 1; i > 0; i--) {
             const j = Math.floor(G.rng() * (i + 1)) % (i + 1);
             const tmp = opts[i]; opts[i] = opts[j]; opts[j] = tmp;

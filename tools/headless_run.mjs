@@ -13,8 +13,10 @@ const JOPT = (p) => { try { return J(p); } catch (e) { return null; } };
 const wj = JOPT('weather.json');
 const ej = JOPT('events.json');
 const rj = JOPT('rival.json');
+const rgj = JOPT('regulars.json');
 DayMods.initDayMods({ weather: wj && wj.list, events: ej && ej.list, rival: rj || null });
 setDayMods(DayMods);
+DATA.regulars = rgj;
 
 const G = makeGame(DATA);
 G.startRun(null);

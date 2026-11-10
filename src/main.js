@@ -53,12 +53,13 @@ async function boot() {
     loadJSON('src/data/utensils.json'), loadJSON('src/data/balance.json'),
     loadJSON('src/data/story.json').catch(() => null),
   ]);
-  DATA = { tags, traits, foods, ingredients, utensils, balance, story };
-  const [weather, events, rival] = await Promise.all([
+  const [weather, events, rival, regulars] = await Promise.all([
     loadJSON('src/data/weather.json').catch(() => null),
     loadJSON('src/data/events.json').catch(() => null),
     loadJSON('src/data/rival.json').catch(() => null),
+    loadJSON('src/data/regulars.json').catch(() => null),
   ]);
+  DATA = { tags, traits, foods, ingredients, utensils, balance, story, regulars };
   DayMods.initDayMods({
     weather: weather && weather.list, events: events && events.list, rival: rival || null,
   });
@@ -123,6 +124,11 @@ async function boot() {
       route();
       return;
     }
+    if (dev === 'regulars') {
+      try { devAuto('prep'); document.title = regularsFlowTest(); }
+      catch (e) { document.title = 'REGULARS FAIL ' + e.message; }
+      return;
+    }
     if (dev === 'sigview') {
       const dish = G.availableFoods().find((f) => {
         const hasUt = !f.utensil || G.s.utensils.includes(f.utensil);
@@ -164,6 +170,45 @@ async function boot() {
     if (dev === 'tutorial') {
       try { document.title = tutorialFlowTest(); }
       catch (e) { document.title = 'TUTORIAL FAIL ' + e.message; }
+      return;
+    }
+    if (dev === 'regsview') {
+      devAuto('prep');
+      Tut.disable(G);
+      const T = (G.DATA.regulars && G.DATA.regulars.types) || [];
+      G.s.regulars = {};
+      T.slice(0, 4).forEach((x, i) => {
+        G.s.regulars[x.id] = { lv: 3 - i, favTag: x.favTag, miss: i === 1 ? 1 : 0 };
+      });
+      G.s.regularNews = [{ id: T[3] && T[3].id, name: T[3] ? T[3].name : '老街坊', lv: 0 }];
+      // 上架几道能做的菜：让「爱吃」有的绿有的红
+      G.availableFoods().filter((f) =>
+        (!f.utensil || G.s.utensils.includes(f.utensil)) && G.canMake(f))
+        .slice(0, 3).forEach((f) => {
+          if (!G.s.menu.find((m) => m.foodId === f.id)) G.toggleMenu(f.id);
+        });
+      route();
+      return;
+    }
+    if (dev === 'qte2mash' || dev === 'qte2math') {
+      devAuto('sell2');
+      const kind = dev === 'qte2mash' ? 'mash' : 'math';
+      const c = G.spawnCustomer();
+      c.special = kind === 'mash' ? 'eater' : 'critic';
+      c.mood = 'normal';
+      G.s.sell.customers.unshift(c);
+      G.s.sell.qte = {
+        type: c.special, name: kind === 'mash' ? '大胃王' : '美食评论家',
+        kind, total: 620, left: 560, cust: c,
+        base: 40, mul: 2.2, rep: 3, failRep: -2, ended: false, ok: false,
+        hits: 5, need: 12,
+        bill: 50, paid: 32.5, change: 17.5,
+        options: [
+          { v: 27.5, ok: false }, { v: 17.5, ok: true },
+          { v: 12.5, ok: false }, { v: 7.5, ok: false },
+        ],
+      };
+      route();
       return;
     }
     if (dev === 'qte2') {
@@ -497,6 +542,136 @@ function qteShowcase(kind) {
 
 
 
+
+
+/* ---------------------------------------------------------------- 熟客自测（?dev=regulars） */
+function regularsFlowTest() {
+  const log = [];
+  const s = G.s;
+  const REG = G.DATA.regulars;
+  if (!REG || !REG.types || !REG.types.length) throw new Error('regulars.json 没加载');
+
+  // 造一个备餐局面：上架 4 道能做的菜，保证标签检查有意义
+  if (!s.menu.some((m) => m.onMenu)) {
+    G.availableFoods().filter((f) =>
+      (!f.utensil || s.utensils.includes(f.utensil) || f.sellWo) && G.canMake(f))
+      .slice(0, 4).forEach((f) => {
+        if (!s.menu.find((m) => m.foodId === f.id)) G.toggleMenu(f.id);
+      });
+  }
+  log.push('菜单 ' + s.menu.filter((m) => m.onMenu).length + ' 道');
+
+  // ① 初始没有熟客
+  if (Object.keys(s.regulars || {}).length) throw new Error('开局就有熟客？');
+  log.push('开局无熟客 OK');
+
+  // ② 服务差不会升级
+  const ct = REG.types[0].id;
+  const before = G.regularOf(ct).lv;
+  for (let i = 0; i < 20; i++) G.tryUpgradeRegular(ct, 3.0);
+  if (G.regularOf(ct).lv !== before) throw new Error('差评居然升级了');
+  log.push('差评不升级 OK');
+
+  // ③ 好评能升级
+  s.regulars = {};
+  let up = null;
+  for (let i = 0; i < 40; i++) {
+    s.regulars = {};            // 清 lastUpDay，模拟跨天
+    up = G.tryUpgradeRegular(ct, 4.9);
+    if (up) break;
+  }
+  if (!up || G.regularOf(ct).lv !== 1) throw new Error('好评没升成熟客：' + JSON.stringify(s.regulars));
+  log.push('好评升级 OK（' + ct + ' Lv.1）');
+
+  // ④ 同一天不能连升（升级本身是概率的，先确保升过一次再看限制）
+  s.regulars = { [ct]: { lv: 0, favTag: REG.types[0].favTag, miss: 0 } };
+  let guard4 = 0;
+  while (G.regularOf(ct).lv === 0 && guard4++ < 60) {
+    s.regulars[ct].lastUpDay = -1;      // 假装跨天，允许再掷一次
+    G.tryUpgradeRegular(ct, 4.9);
+  }
+  if (G.regularOf(ct).lv !== 1) throw new Error('始终没升上去，无法验证同日限制');
+  // 此时 lastUpDay 就是今天，紧接着再掷应当无效
+  for (let i = 0; i < 30; i++) G.tryUpgradeRegular(ct, 5);
+  if (G.regularOf(ct).lv !== 1) throw new Error('同一天连升了：' + G.regularOf(ct).lv);
+  log.push('同日限一次 OK');
+
+  // ⑤ 等级上限
+  s.regulars = { [ct]: { lv: REG.maxLevel, favTag: REG.types[0].favTag, miss: 0 } };
+  for (let i = 0; i < 10; i++) { s.regulars[ct].lastUpDay = -1; G.tryUpgradeRegular(ct, 5); }
+  if (G.regularOf(ct).lv !== REG.maxLevel) throw new Error('超过上限了');
+  log.push('Lv.' + REG.maxLevel + ' 封顶 OK');
+
+  // ⑥ 熟客出现权重更高
+  s.regulars = { [ct]: { lv: REG.maxLevel, favTag: REG.types[0].favTag, miss: 0 } };
+  G.startSell();
+  let hit = 0;
+  for (let i = 0; i < 3000; i++) {
+    const c = G.spawnCustomer();
+    if (c.ctype === ct) hit++;
+  }
+  const expect = 3000 / REG.types.length;
+  if (hit < expect * 1.2) throw new Error('熟客没更容易出现：' + hit + ' vs 均值 ' + Math.round(expect));
+  log.push('出现权重 OK（' + hit + ' vs 均值 ' + Math.round(expect) + '）');
+
+  // ⑦ 偏爱：熟客更想点自己爱吃的
+  const fav = REG.types[0].favTag;
+  const onMenuHasFav = s.menu.filter((m) => m.onMenu)
+    .some((m) => (G.FOOD[m.foodId].tags || []).includes(fav));
+  if (onMenuHasFav) {
+    let want = 0, n = 0;
+    for (let i = 0; i < 3000; i++) {
+      const c = G.spawnCustomer();
+      if (c.ctype !== ct) continue;
+      n++;
+      if (c.wantTag === fav) want++;
+    }
+    if (!(want > n * 0.3)) throw new Error('熟客没偏爱：' + want + '/' + n);
+    log.push('偏爱 OK（' + want + '/' + n + '）');
+  } else {
+    log.push('菜单无该标签，跳过偏爱检查');
+  }
+
+  // ⑧ 连续两天没上爱吃的菜 → 掉级
+  s.regulars = { [ct]: { lv: 2, favTag: 'no_such_tag', miss: 0 } };
+  const lvB = G.regularOf(ct).lv;
+  G.tickRegulars();
+  if (G.regularOf(ct).lv !== lvB) throw new Error('第一次失望就掉级了');
+  const news = G.tickRegulars();
+  if (G.regularOf(ct).lv >= lvB) throw new Error('两次失望没掉级');
+  if (!news.length) throw new Error('掉级没有产生播报');
+  log.push('缺席掉级 OK（Lv.' + lvB + '→' + G.regularOf(ct).lv + '）');
+
+  // ⑨ 上了爱吃的菜 → 失望清零
+  s.regulars = { [ct]: { lv: 2, favTag: REG.types[0].favTag, miss: 1 } };
+  const hasFav = G.menuCount(REG.types[0].favTag) > 0;
+  if (hasFav) {
+    G.tickRegulars();
+    if ((s.regulars[ct].miss || 0) !== 0) throw new Error('上了爱吃的菜还没清零');
+    log.push('上架即清零 OK');
+  } else {
+    log.push('菜单无该标签，跳过清零检查');
+  }
+
+  // ⑩ 存档往返：熟客 / 招牌 / 天气 / 事件都得存住
+  s.regulars = { [ct]: { lv: 2, favTag: REG.types[0].favTag, miss: 1 } };
+  s.signature = s.menu.find((m) => m.onMenu) ? s.menu.find((m) => m.onMenu).foodId : null;
+  s.weather = 'rain';
+  s.events = [{ id: 'clearance', name: '清仓甩卖', good: true, title: 'T', desc: 'D' }];
+  save();
+  const raw = localStorage.getItem('bushaoxin.save.v2');
+  if (!raw) throw new Error('没写进存档');
+  const back = JSON.parse(raw).run;
+  if (!back.regulars || !back.regulars[ct] || back.regulars[ct].lv !== 2) {
+    throw new Error('熟客没存住：' + JSON.stringify(back.regulars));
+  }
+  if (back.signature !== s.signature) throw new Error('招牌没存住');
+  if (back.weather !== 'rain') throw new Error('天气没存住：' + back.weather);
+  if (!back.events || back.events.length !== 1) throw new Error('事件没存住');
+  log.push('存档往返 OK');
+
+  return 'REGULARS OK — ' + log.join(' | ');
+}
 
 /* ---------------------------------------------------------------- 招牌菜自测（?dev=signature） */
 function signatureFlowTest() {
@@ -847,7 +1022,46 @@ function qteFlowTest() {
   if (G.s.rep >= rep4) throw new Error('超时没有掉口碑');
   log.push('超时判负 OK');
 
-  // ⑤ 特殊顾客出现在队列里，且渲染不炸
+  // ⑤ 连点：点够次数即成功
+  const c5 = forceQte('eater');
+  S().qte = {
+    type: 'eater', name: '大胃王', kind: 'mash',
+    total: 620, left: 600, cust: c5, base: 40, mul: 2.6,
+    rep: 1, failRep: -1, ended: false, ok: false, hits: 0, need: 12,
+  };
+  updateSellStats(G);
+  const tapBtn = document.querySelector('[data-act="qteTap"]');
+  if (!tapBtn) throw new Error('连点 QTE 没渲染出按钮');
+  for (let i = 0; i < 11; i++) {
+    const b = document.querySelector('[data-act="qteTap"]');
+    if (!b) break;
+    b.click();
+  }
+  if (!S().qte) throw new Error('点 11 次就结束了？');
+  if ((S().qte.hits || 0) < 11) throw new Error('连点没记上：' + (S().qte.hits || 0));
+  const bLast = document.querySelector('[data-act="qteTap"]');
+  if (bLast) bLast.click();
+  if (S().qte) throw new Error('点够 12 次后 QTE 没结束');
+  log.push('连点 OK（12 次判成功）');
+
+  // ⑥ 算账：选对找零
+  const c6 = forceQte('critic');
+  S().qte = {
+    type: 'critic', name: '美食评论家', kind: 'math',
+    total: 620, left: 560, cust: c6, base: 40, mul: 2.2,
+    rep: 4, failRep: -3, ended: false, ok: false,
+    bill: 50, paid: 32.5, change: 17.5,
+    options: [{ v: 27.5, ok: false }, { v: 17.5, ok: true }, { v: 12.5, ok: false }, { v: 7.5, ok: false }],
+  };
+  updateSellStats(G);
+  const mathBtns = [...document.querySelectorAll('[data-act="qtePick"].math, .qte-opt.math')];
+  if (mathBtns.length !== 4) throw new Error('算账选项数不对：' + mathBtns.length);
+  const repM = G.s.rep;
+  mathBtns[1].click();
+  if (!(G.s.rep > repM)) throw new Error('算账选对没加口碑');
+  log.push('算账 OK（选对 +口碑）');
+
+  // ⑦ 特殊顾客出现在队列里，且渲染不炸
   if (!S().customers.some((c) => c.special)) throw new Error('特殊顾客没进队列');
   log.push('特殊顾客入队 OK');
 
@@ -947,7 +1161,8 @@ function devAuto(mode) {
     return;
   }
 
-  if (mode === 'prep' || mode === 'signature' || mode === 'sigview') return;
+  if (mode === 'prep' || mode === 'signature' || mode === 'sigview'
+    || mode === 'regulars' || mode === 'regsview') return;
   if (mode === 'settle' || mode === 'meta') {
     const playDay = () => {
       const pool = G.availableFoods().filter((f) =>
@@ -1196,6 +1411,13 @@ function onClick(ev) {
       Tut.advance(G, 'toPrep');
       G.finishStock();
       route();
+      break;
+    }
+    case 'qteTap': {
+      Tut.advance(G, 'qte');
+      const r = G.qteTap();
+      if (r && r.done === false) break;      // 还没点够，继续
+      if (r && r.ok !== undefined) toast(r.ok ? `${r.name}：够快` : `${r.name}：太慢了`);
       break;
     }
     case 'qteHit': {

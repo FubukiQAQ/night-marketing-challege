@@ -562,6 +562,30 @@ export function renderPrep(G) {
     ? showTraits.map((x) => x.html).join('')
     : '<div class="hint">这个分类下还没有词条。先上架同标签的菜试试。</div>';
 
+  // 熟客：已升级的 + 今天失望的
+  const regs = s.regulars || {};
+  const regDefs = (G.DATA.regulars && G.DATA.regulars.types) || [];
+  const regList = regDefs
+    .map((d) => ({ def: d, st: regs[d.id] }))
+    .filter((x) => x.st && x.st.lv > 0)
+    .sort((a, b) => b.st.lv - a.st.lv);
+  const regRows = regList.length
+    ? regList.map((x) => {
+      const fav = x.st.favTag;
+      const tg = G.TAG[fav];
+      const on = fav ? G.menuCount(fav) : 0;
+      const angry = (x.st.miss || 0) > 0;
+      return `<div class="reg-row ${angry ? 'miss' : ''}">
+        <span class="reg-lv">${'★'.repeat(Math.min(3, x.st.lv))}</span>
+        <span class="reg-name">${x.def.name}</span>
+        <span class="reg-fav ${on ? 'ok' : 'bad'}">爱吃 ${tg ? tg.name : fav}${on ? '' : '（没上架）'}</span>
+      </div>`;
+    }).join('')
+    : '<div class="hint tiny">还没有熟客。服务评价够好的客人会常来。</div>';
+
+  const regNews = (s.regularNews || []).map((n) =>
+    `<div class="reg-news">${n.name} 好几天没吃到爱吃的，不太来了</div>`).join('');
+
   const resoRows = G.DATA.traits.resonances.map((r) => {
     const ok = mods.resonances.find((x) => x.id === r.id);
     return `<div class="tiny ${ok ? 'reso' : 'muted'}">${icon('ico/' + r.icon + '.png', 20)}
@@ -581,7 +605,12 @@ export function renderPrep(G) {
       </div>
     </div>
     <div class="col-side">
-      <div class="panel prep-trait-panel">
+      <div class="panel prep-reg-panel">
+        <h3 class="panel-title">★ 熟客 · 服务好评会常来</h3>
+        ${regNews}
+        ${regRows}
+      </div>
+      <div class="panel prep-trait-panel mt8">
         <h3 class="panel-title">${icon('ico/trait_speed.png', 18)} 词条树 · 上架同标签的菜点亮</h3>
         <div class="tfilter">
           <button class="small ${prepView.traitFilter === 'all' ? 'primary' : ''}" data-act="traitFilter" data-f="all">全部 ${allTraits.length}</button>
@@ -600,6 +629,7 @@ export function renderPrep(G) {
         <h3 class="panel-title">${icon('ico/reso_spicy_fast.png', 18)} 共鸣</h3>
         ${resoRows}
       </div>
+
     </div>
   </div>`;
 
@@ -691,7 +721,7 @@ function renderQte(G) {
   }
 
   // 只在数值变化时重绘（每 tick 一次，别每帧刷）
-  const key = q.type + ':' + q.left + ':' + (q.ended ? '1' : '0');
+  const key = q.type + ':' + q.left + ':' + (q.hits || 0) + ':' + (q.ended ? '1' : '0');
   if (host.dataset.k === key) return;
   host.dataset.k = key;
   host.dataset.on = '1';
@@ -701,6 +731,46 @@ function renderQte(G) {
   const ratio = Math.max(0, q.left / q.total);
   const pos = 1 - ratio;                 // 指针位置 0..1
   const secs = Math.max(0, q.left / 200).toFixed(1);
+
+  if (q.kind === 'mash') {
+    const hits = q.hits || 0;
+    const need = q.need || 12;
+    const pct = Math.min(100, (hits / need) * 100);
+    host.innerHTML = `
+      <div class="qte">
+        <div class="qte-head">
+          <b>${q.name}</b>
+          <span>连点催单 · 还差 ${Math.max(0, need - hits)} 次 · ${secs}s</span>
+        </div>
+        <div class="qte-timer"><i style="width:${(ratio * 100).toFixed(1)}%"></i></div>
+        <div class="qte-mash">
+          <div class="qte-mash-bar"><i style="width:${pct.toFixed(1)}%"></i></div>
+          <span class="qte-mash-num">${hits} / ${need}</span>
+        </div>
+        <button class="qte-btn qte-mash-btn" data-act="qteTap">快点！</button>
+      </div>`;
+    return;
+  }
+
+  if (q.kind === 'math') {
+    host.innerHTML = `
+      <div class="qte">
+        <div class="qte-head">
+          <b>${q.name}</b>
+          <span>找零 · ${secs}s</span>
+        </div>
+        <div class="qte-timer"><i style="width:${(ratio * 100).toFixed(1)}%"></i></div>
+        <div class="qte-math">
+          <span>他给了 <b>¥${(q.bill || 50).toFixed(0)}</b>，这单 <b>¥${(q.paid || 0).toFixed(1)}</b></span>
+          <span class="qte-math-q">该找多少？</span>
+        </div>
+        <div class="qte-opts math">
+          ${(q.options || []).map((o, i) =>
+            `<button class="qte-opt math" data-act="qtePick" data-i="${i}">¥${o.v.toFixed(1)}</button>`).join('')}
+        </div>
+      </div>`;
+    return;
+  }
 
   if (q.kind === 'pick') {
     host.innerHTML = `

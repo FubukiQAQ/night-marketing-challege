@@ -49,5 +49,9 @@ button.small.sig-btn:hover {
 
 @media (max-width: 768px) {
   .sig-badge, .clash-note { font-size: 10px; }
-  button.small.sig-btn { min-height: 40px; }
+  /* 触控目标必须 ≥44px，别为了紧凑把按钮压小 */
+  button.small.sig-btn {
+    min-height: 44px;
+    padding: 0 12px;
+  }
 }
