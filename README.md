@@ -404,14 +404,22 @@ python tools/check_text.py      # 扫一遍文本文件有没有编码乱码
 
 `tools/build_submission.py` 生成两个包：
 
-| 包 | 内容 |
+四个包，按「是否匿名」× 「是否带 BGM」组合：
+
+| 包 | 说明 |
 |---|---|
-| `dist/不烧心夜市挑战-完整版.zip` | git 跟踪的全部 1366 个文件 |
-| `dist/不烧心夜市挑战-匿名版.zip` | 同上，`FubukiQAQ` → `dev`，README 的 clone 行换成中性说明 |
+| `dist/不烧心夜市挑战-完整版-含BGM.zip` | git 跟踪的全部文件 + ConcernedApe 两首曲子 |
+| `dist/不烧心夜市挑战-匿名版-含BGM.zip` | 同上，`FubukiQAQ` → `dev` |
+| `dist/不烧心夜市挑战-完整版-无BGM.zip` | 不含任何 mp3 |
+| `dist/不烧心夜市挑战-匿名版-无BGM.zip` | 不含 mp3，且已匿名 |
 
-两个包都**不含商业 BGM**（`sound/*.mp3` 本来就在 `.gitignore` 里，版权见 `sound/README.md`），也自动排除了 `_raw/` 美术中间产物（127 MB，可 `RUN_ART.bat` 重跑）。
+**BGM 范围**：只打包 ConcernedApe 的两首（`Spring` / `Summer`，用于备货与备餐阶段）。C418 的两首不随包分发。含 BGM 版会同步裁剪 `src/data/tracks.json`，曲目表里只留包内真实存在的曲子，避免播放器列出点不开的条目。
 
-打包后实测：解压 → `python -m http.server` → `?dev=play` 跑完 7 天、`?dev=qte` 五类全过、`check_assets` 426 帧全解析。无 BGM 状态下游戏正常运行（曲目加载失败会静默跳过）。
+**README 处理**：所有包都抹掉了仓库链接（`git clone` 行换成中性说明），匿名版另外把用户名替换掉。
+
+四个包都排除了 `_raw/` 美术中间产物（127 MB，可重跑）和打包脚本自身。
+
+打包后实测：解压 → `python -m http.server` → `?dev=play` 跑完 7 天、`?dev=qte` 五类全过、`check_assets` 426 帧全解析。无 BGM 状态下游戏同样正常运行（曲目加载失败会静默跳过）。
 
 ---
 
@@ -423,7 +431,7 @@ python tools/check_text.py      # 扫一遍文本文件有没有编码乱码
 - 成品跨日保留、冰柜冷藏加成、外卖渠道未做
 - 数值是 v0 骨架，靠无头模拟粗调过一轮，远未平衡
 - 触屏做了 44px 触控、手势与安全区，但只在无头浏览器里审计过，**真机手感未验证**
-- BGM 曲目为商业作品，未随仓库分发（见 `sound/README.md`）
+- BGM 曲目为商业作品，不随仓库分发；`-含BGM` 提交包内附 ConcernedApe 的两首（见 `sound/README.md`）
 
 ---
 
@@ -431,7 +439,7 @@ python tools/check_text.py      # 扫一遍文本文件有没有编码乱码
 
 - **字体**：[缝合像素字体 Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font)（作者 TakWolf，版本 2026.10.25，简体中文子集），**SIL Open Font License 1.1**。再分发时请附带上游 OFL 全文。
 - **美术素材**：`assets/art_hd/` 为 AI 生成的 HD 精细像素素材（生成脚本与提示词见 `tools/artgen*.py`、`tools/art_prompts.py`）。
-- **BGM**：曲目版权归原作者（C418 / ConcernedApe），**未随仓库分发**，详见 `sound/README.md`。
+- **BGM**：曲目版权归原作者。C418（Aria Math / Moog City 2）与 ConcernedApe（Spring / Summer）的作品**不随仓库分发**；`-含BGM` 提交包内附 ConcernedApe 两首，仅用于本赛事评审，详见 `sound/README.md`。
 - **数值与文案**：本项目原创。
 
 ## 许可
