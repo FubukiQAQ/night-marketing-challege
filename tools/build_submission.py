@@ -89,6 +89,26 @@ def filter_tracks_txt(txt, available_basenames):
     return json.dumps(kept, ensure_ascii=False, indent=2) + '\n', len(lst) - len(kept)
 
 
+
+ENTRY_RX = re.compile(
+    r"^\s*\{\s*file:\s*'([^']+)'.*?\},?\s*$", re.M)
+
+
+def filter_audio_defaults(txt, available_basenames):
+    """删掉 audio.js 里指向包内不存在文件的兜底条目"""
+    dropped = []
+
+    def sub(m):
+        base = os.path.basename(m.group(1))
+        if base in available_basenames:
+            return m.group(0)
+        dropped.append(base)
+        return ''
+
+    out = ENTRY_RX.sub(sub, txt)
+    return out, len(dropped)
+
+
 def build(src_files, out_zip, anon, audio):
     tag = '_tmp_' + ('anon' if anon else 'full') + ('_a' if audio else '')
     tmp = os.path.join(DIST, tag)
@@ -109,6 +129,13 @@ def build(src_files, out_zip, anon, audio):
         dst = os.path.join(tmp, rel.replace('/', os.sep))
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         ext = os.path.splitext(rel)[1].lower()
+        base = os.path.basename(rel)
+
+        # 授权文件必须逐字节一致：任何文本重写都可能改动行尾或空白
+        if base.upper().startswith('LICENSE'):
+            shutil.copy2(src, dst)
+            n_copied += 1
+            continue
 
         if ext in TEXT_EXT:
             try:
@@ -125,11 +152,15 @@ def build(src_files, out_zip, anon, audio):
             if anon:
                 for rx, rep in ANON_RULES:
                     new = rx.sub(rep, new)
-            # 含 BGM 版：tracks.json 只留真实存在的曲目
+            # 含 BGM 版：tracks.json 与 audio.js 的兜底表都只留真实存在的曲目
             if audio and rel == 'src/data/tracks.json':
                 new, dropped = filter_tracks_txt(new, audio_names)
                 if dropped:
                     print('  tracks.json 裁掉 %d 条（包里没有对应文件）' % dropped)
+            if audio and rel == 'src/audio.js':
+                new, dropped = filter_audio_defaults(new, audio_names)
+                if dropped:
+                    print('  audio.js 兜底表裁掉 %d 条' % dropped)
             if new != txt:
                 patched.append(rel)
             io.open(dst, 'w', encoding='utf-8', newline='').write(new)
