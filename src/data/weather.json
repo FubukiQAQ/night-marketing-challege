@@ -1,0 +1,45 @@
+{
+  "_note": "天气：每天随机，影响客流、单价与各属性需求。day 1 恒为 clear，让新手第一天不吃天气惩罚。",
+  "list": [
+    {
+      "id": "clear",
+      "name": "晴",
+      "icon": "ui/ui_dot_full.png",
+      "desc": "无风无雨，标准的夜市夜。",
+      "weight": 34,
+      "trafficMul": 1,
+      "priceMul": 1,
+      "demand": {}
+    },
+    {
+      "id": "rain",
+      "name": "雨",
+      "icon": "ui/ui_progress_fill_warm.png",
+      "desc": "雨点砸在棚布上。堂食的人少了，打包的人多了。",
+      "weight": 24,
+      "trafficMul": 0.82,
+      "priceMul": 1.18,
+      "demand": { "soup": 1.55, "madedish": 1.2, "grilled": 0.75, "cold": 0.7, "dessert": 0.8 }
+    },
+    {
+      "id": "hot",
+      "name": "闷热",
+      "icon": "ui/ui_progress_fill_danger.png",
+      "desc": "一丝风都没有。冰的东西卖得比热的快。",
+      "weight": 22,
+      "trafficMul": 1.06,
+      "priceMul": 1,
+      "demand": { "madedrink": 1.6, "drink": 1.45, "cold": 1.35, "dessert": 1.3, "soup": 0.62, "braised": 0.8 }
+    },
+    {
+      "id": "cold",
+      "name": "降温",
+      "icon": "ui/ui_dot_empty.png",
+      "desc": "风一起就凉了。热汤热卤的摊子前面开始排队。",
+      "weight": 20,
+      "trafficMul": 0.95,
+      "priceMul": 1.05,
+      "demand": { "soup": 1.45, "braised": 1.3, "madedish": 1.15, "cold": 0.6, "madedrink": 0.72, "drink": 0.8 }
+    }
+  ]
+}

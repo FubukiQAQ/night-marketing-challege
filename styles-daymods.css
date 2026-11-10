@@ -1,0 +1,66 @@
+/* ============================================================
+   今日天气 / 随机事件 / 同行 的横带
+   ============================================================ */
+
+.day-strip {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 8px 0 4px;
+}
+
+.day-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 12px;
+  line-height: 1.35;
+  max-width: 100%;
+}
+.day-chip b {
+  font-weight: normal;
+  color: var(--text);
+  flex: 0 0 auto;
+}
+.day-chip-desc {
+  color: var(--dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+.day-chip .spr { flex: 0 0 auto; }
+
+/* 天气 */
+.day-chip.wx-rain { border-color: rgba(89, 168, 232, 0.5); background: rgba(89, 168, 232, 0.10); }
+.day-chip.wx-hot { border-color: rgba(224, 67, 43, 0.45); background: rgba(224, 67, 43, 0.09); }
+.day-chip.wx-cold { border-color: rgba(140, 190, 230, 0.4); background: rgba(140, 190, 230, 0.08); }
+
+/* 事件 */
+.day-chip.ev.good {
+  border-color: rgba(110, 231, 168, 0.5);
+  background: rgba(110, 231, 168, 0.09);
+}
+.day-chip.ev.good b { color: #8FE9B8; }
+.day-chip.ev.bad {
+  border-color: rgba(255, 92, 122, 0.5);
+  background: rgba(255, 92, 122, 0.09);
+}
+.day-chip.ev.bad b { color: #FF9BAC; }
+
+/* 同行 */
+.day-chip.rival {
+  border-color: rgba(216, 114, 40, 0.5);
+  background: rgba(216, 114, 40, 0.10);
+}
+.day-chip.rival b { color: #FFC98C; }
+
+@media (max-width: 768px) {
+  .day-chip { font-size: 11px; padding: 3px 8px; }
+  .day-chip-desc { max-width: 160px; }
+}

@@ -1,10 +1,11 @@
 // main.js — 引导、阶段路由、出摊循环、事件委托
 import { loadAssets } from './sprites.js';
-import { makeGame, mulberry32 } from './core.js';
+import { makeGame, mulberry32, setDayMods } from './core.js';
 import { loadSave, writeSave, clearSave, describeSave, formatTime } from './save.js';
 import * as Audio from './audio.js';
 import * as Tut from './tutorial.js';
 import * as Touch from './touch.js';
+import * as DayMods from './daymods.js';
 import { renderSell, resetScene, SCENE } from './render.js';
 import { hud, renderStock, renderPrep, renderSellShell, updateSellStats,
          renderSettle, renderMeta, renderMenu, toast, keepScroll,
@@ -53,6 +54,17 @@ async function boot() {
     loadJSON('src/data/story.json').catch(() => null),
   ]);
   DATA = { tags, traits, foods, ingredients, utensils, balance, story };
+  const [weather, events, rival] = await Promise.all([
+    loadJSON('src/data/weather.json').catch(() => null),
+    loadJSON('src/data/events.json').catch(() => null),
+    loadJSON('src/data/rival.json').catch(() => null),
+  ]);
+  DayMods.initDayMods({
+    weather: weather && weather.list, events: events && events.list, rival: rival || null,
+  });
+  DATA.weather = weather && weather.list;
+  DATA.events = events && events.list;
+  setDayMods(DayMods);
   Tut.initTutorial(await loadJSON('src/data/tutorial.json').catch(() => null));
   await loadAssets();
 
@@ -97,6 +109,33 @@ async function boot() {
     if (dev === 'width') {
       try { document.title = 'W boot'; await probeWidth(); }
       catch (e) { document.title = 'W FAIL ' + e.message; }
+      return;
+    }
+    if (dev === 'wx') {
+      const w = params.get('w') || 'rain';
+      const rv = parseFloat(params.get('rival') || '0.55');
+      devAuto('sell2');
+      G.s.weather = w;
+      G.s.rival = { strength: rv, focusTag: 'fried', name: '街尾那家' };
+      G.s.events = [
+        { id: 'night_market', name: '夜市活动', good: true, title: '街口在办活动', desc: '' },
+      ];
+      route();
+      return;
+    }
+    if (dev === 'sigview') {
+      const dish = G.availableFoods().find((f) => {
+        const hasUt = !f.utensil || G.s.utensils.includes(f.utensil);
+        return hasUt && f.recipe.length <= 2 && (f.space || 0) <= 2;
+      });
+      if (dish) G.setSignature(dish.id);
+      route();
+      return;
+    }
+    if (dev === 'signature') {
+      route();
+      try { document.title = signatureFlowTest(); }
+      catch (e) { document.title = 'SIGNATURE FAIL ' + e.message; }
       return;
     }
     if (dev === 'touchdiag') {
@@ -287,7 +326,15 @@ async function devPlay() {
   };
   const step = [];
   for (let d = 0; d < 7; d++) {
-    // 备货：点前 8 个格子各 3 次进购物车，再结算
+    // 备货：先切到有货的页签，再点格子
+    const tabWithStock = [...document.querySelectorAll('.sup-tab')].findIndex((tb, i) => {
+      tb.click();
+      return document.querySelectorAll('.tile').length > 0;
+    });
+    if (tabWithStock >= 0) {
+      document.querySelectorAll('.sup-tab')[tabWithStock].click();
+    }
+    // 点前 8 个格子各 10 次进购物车，再结算
     for (let k = 0; k < 8; k++) {
       for (let n = 0; n < 10; n++) {
         const t = document.querySelectorAll('.tile:not(.out)')[k];
@@ -449,6 +496,86 @@ function qteShowcase(kind) {
 
 
 
+
+
+/* ---------------------------------------------------------------- 招牌菜自测（?dev=signature） */
+function signatureFlowTest() {
+  const log = [];
+  const s = G.s;
+  if (G.s.phase !== 'PREP') throw new Error('不在备餐阶段：' + G.s.phase);
+
+  // 挑一道有厨具、配方短的菜
+  const dish = G.availableFoods().find((f) => {
+    const hasUt = !f.utensil || s.utensils.includes(f.utensil);
+    return hasUt && f.recipe.length <= 2 && (f.space || 0) <= 2;
+  });
+  if (!dish) throw new Error('找不到合适的教学菜');
+
+  // ① 按钮存在
+  const btn = document.querySelector('.food[data-fid="' + dish.id + '"] [data-act="signature"]');
+  if (!btn) throw new Error('没有「设为招牌」按钮');
+
+  // ② 定招牌
+  btn.click();
+  if (s.signature !== dish.id) throw new Error('招牌没定上：' + s.signature);
+  log.push('定招牌 OK：' + dish.name);
+
+  // ③ 招牌自动上架
+  const m = s.menu.find((x) => x.foodId === dish.id);
+  if (!m || !m.onMenu) throw new Error('招牌没有自动上架');
+  log.push('自动上架 OK');
+
+  // ④ 同属性其他菜被下架 + 上架被拒
+  const clash = G.availableFoods().find((f) => f.id !== dish.id
+    && f.tags.some((t) => dish.tags.includes(t)));
+  if (clash) {
+    const r = G.toggleMenu(clash.id);
+    const on = (s.menu.find((x) => x.foodId === clash.id) || {}).onMenu;
+    if (on) throw new Error('冲突菜居然能上架：' + clash.name);
+    if (!r.issues.some((i) => i.level === 'error')) throw new Error('冲突没有报错');
+    log.push('冲突拦截 OK（' + clash.name + '）');
+  } else {
+    log.push('无同属性菜可测');
+  }
+
+  // ⑤ 台面多算了招牌位
+  const usedWith = G.surfaceUsed();
+  const saveSig = s.signature;
+  s.signature = null;
+  const usedWithout = G.surfaceUsed();
+  s.signature = saveSig;
+  const delta = usedWith - usedWithout;
+  if (delta !== G.B.signatureSurface) {
+    throw new Error('招牌台面位不对：' + delta + ' vs ' + G.B.signatureSurface);
+  }
+  log.push('占位 +' + delta + ' 格 OK');
+
+  // ⑥ 出餐更快
+  const tSig = G.prepMinutesFor(dish);
+  s.signature = null;
+  const tBase = G.prepMinutesFor(dish);
+  s.signature = saveSig;
+  if (!(tSig < tBase)) throw new Error('招牌没有更快：' + tSig + ' vs ' + tBase);
+  log.push('备餐 ' + tBase.toFixed(2) + '→' + tSig.toFixed(2) + ' 分钟');
+
+  // ⑦ 不能换招牌
+  const r2 = G.setSignature(dish.id);
+  if (r2.ok) throw new Error('居然允许换招牌');
+  log.push('不可更换 OK');
+
+  // ⑧ 出摊时招牌加价
+  G.startSell();
+  const S = G.s.sell;
+  const mods = S.mods;
+  const base = 20;
+  const expect = base * mods.profitMul * mods.priceMul * (1 + G.B.signaturePriceUp / 100);
+  const got = base * mods.profitMul * mods.priceMul
+    * (s.signature === dish.id ? 1 + G.B.signaturePriceUp / 100 : 1);
+  if (Math.abs(got - expect) > 0.01) throw new Error('招牌溢价算错');
+  log.push('溢价 +' + G.B.signaturePriceUp + '% OK');
+
+  return 'SIGNATURE OK — ' + log.join(' | ');
+}
 
 /* ---------------------------------------------------------------- 触屏诊断（?dev=touchdiag） */
 function touchDiag() {
@@ -820,7 +947,7 @@ function devAuto(mode) {
     return;
   }
 
-  if (mode === 'prep') return;
+  if (mode === 'prep' || mode === 'signature' || mode === 'sigview') return;
   if (mode === 'settle' || mode === 'meta') {
     const playDay = () => {
       const pool = G.availableFoods().filter((f) =>
@@ -1096,6 +1223,13 @@ function onClick(ev) {
     case 'traitFilter': {
       setTraitFilter(t.dataset.f);
       keepScroll(() => renderPrep(G));
+      break;
+    }
+    case 'signature': {
+      const r = G.setSignature(t.dataset.f);
+      if (!r.ok) { toast(r.msg); break; }
+      toast('招牌定下了：' + G.FOOD[t.dataset.f].name + '（这一轮不能换）');
+      hud(G); keepScroll(() => renderPrep(G)); save();
       break;
     }
     case 'toggle': {

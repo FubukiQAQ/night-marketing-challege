@@ -39,6 +39,8 @@ const SPECIAL_LABEL = {
   foodie: '老饕', gold_courier: '金主代跑',
 };
 
+let rainDrops = null;
+
 let TYPES = null;
 let t = 0;
 
@@ -46,6 +48,133 @@ export function resetScene() { t = 0; }
 
 function sceneKey(name) {
   return 'scene/scene_' + name + '.png';
+}
+
+
+/* ---------------------------------------------------------------- 天气 */
+
+function initRain() {
+  rainDrops = [];
+  for (let i = 0; i < 70; i++) {
+    rainDrops.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      len: 10 + Math.random() * 16,
+      sp: 320 + Math.random() * 260,
+      a: 0.12 + Math.random() * 0.22,
+    });
+  }
+}
+
+/** 天气叠层：雨丝 / 热雾 / 冷色 */
+function drawWeather(ctx, weatherId, dt) {
+  if (!weatherId || weatherId === 'clear') return;
+
+  if (weatherId === 'rain') {
+    if (!rainDrops) initRain();
+    ctx.save();
+    ctx.strokeStyle = 'rgba(170, 205, 235, 0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    rainDrops.forEach((d) => {
+      d.y += d.sp * dt;
+      d.x -= d.sp * 0.18 * dt;
+      if (d.y > H + 20) { d.y = -20; d.x = Math.random() * (W + 120); }
+      if (d.x < -20) d.x = W + 20;
+      ctx.moveTo(d.x, d.y);
+      ctx.lineTo(d.x + 2.2, d.y + d.len);
+    });
+    ctx.stroke();
+    // 地面湿反光
+    ctx.fillStyle = 'rgba(90, 130, 175, 0.10)';
+    ctx.fillRect(0, H * 0.72, W, H * 0.28);
+    ctx.restore();
+    return;
+  }
+
+  if (weatherId === 'hot') {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = 'rgba(255, 150, 70, 0.055)';
+    ctx.fillRect(0, 0, W, H);
+    // 底部热雾
+    const g = ctx.createLinearGradient(0, H * 0.55, 0, H);
+    g.addColorStop(0, 'rgba(255, 170, 90, 0)');
+    g.addColorStop(1, 'rgba(255, 170, 90, 0.07)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, H * 0.55, W, H * 0.45);
+    ctx.restore();
+    return;
+  }
+
+  if (weatherId === 'cold') {
+    ctx.save();
+    ctx.fillStyle = 'rgba(90, 130, 190, 0.10)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
+}
+
+/* ---------------------------------------------------------------- 街尾同行 */
+
+/** 街尾那家的摊子：一块暗色棚子 + 一盏灯，灯越亮说明他越拼 */
+function drawRival(ctx, rival, t) {
+  if (!rival || !(rival.strength > 0.01)) return;
+  // 右后方：厨具占 x48~558，顾客从 y314 起，这块是空的
+  const bx = 800;
+  const by = 150;
+  const bw = 132;
+  const bh = 122;
+  const k = Math.min(1, rival.strength);
+
+  ctx.save();
+  // 棚顶（比背景亮一档，才有轮廓）
+  ctx.fillStyle = 'rgba(58, 44, 32, 0.95)';
+  ctx.beginPath();
+  ctx.moveTo(bx - 10, by + 26);
+  ctx.lineTo(bx + bw + 10, by + 26);
+  ctx.lineTo(bx + bw - 2, by + 2);
+  ctx.lineTo(bx + 2, by + 2);
+  ctx.closePath();
+  ctx.fill();
+  // 棚顶受光边
+  ctx.fillStyle = 'rgba(120, 92, 62, 0.85)';
+  ctx.fillRect(bx - 10, by + 24, bw + 20, 3);
+
+  // 摊体
+  ctx.fillStyle = 'rgba(24, 28, 38, 0.94)';
+  ctx.fillRect(bx + 4, by + 27, bw - 8, bh - 27);
+  // 台面
+  ctx.fillStyle = 'rgba(86, 62, 40, 0.95)';
+  ctx.fillRect(bx + 6, by + 84, bw - 12, 9);
+  // 台面受光
+  ctx.fillStyle = 'rgba(190, 140, 84, 0.55)';
+  ctx.fillRect(bx + 6, by + 84, bw - 12, 2);
+
+  // 灯泡
+  ctx.fillStyle = 'rgba(255, 214, 150, 0.95)';
+  ctx.beginPath();
+  ctx.arc(bx + bw / 2, by + 34, 3.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 灯光光晕：越强越亮
+  ctx.globalCompositeOperation = 'lighter';
+  const pulse = 0.72 + 0.28 * Math.sin(t * 2.1);
+  glow(ctx, bx + bw / 2, by + 40, 58 + k * 34,
+    k > 0.55 ? '255,190,120' : '255,160,96', (0.16 + k * 0.22) * pulse);
+  ctx.restore();
+
+  // 招牌字
+  ctx.save();
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(16, 12, 8, 0.85)';
+  const label = rival.name || '街尾那家';
+  const tw = ctx.measureText(label).width + 12;
+  ctx.fillRect(bx + bw / 2 - tw / 2, by - 20, tw, 17);
+  ctx.fillStyle = 'rgba(255, 206, 150, 0.95)';
+  ctx.fillText(label, bx + bw / 2, by - 7);
+  ctx.restore();
 }
 
 export function renderSell(ctx, G, dt) {
@@ -64,6 +193,8 @@ export function renderSell(ctx, G, dt) {
   sceneDraw(ctx, 'scene_night_near', 0, 0, W, H);
 
   // ---------- 厨具
+  drawRival(ctx, s.rival, t);
+
   const uids = s.utensils.slice(0, LAYOUT.utensilMax);
   uids.forEach((uid, i) => {
     const busy = S && S.jobs[uid] && S.jobs[uid].length > 0;
@@ -200,6 +331,9 @@ export function renderSell(ctx, G, dt) {
     ctx.fillRect(0, 0, W, H);
   }
   ctx.restore();
+
+  // 天气叠层压在最上面（雨丝/热雾/冷色）
+  drawWeather(ctx, s.weather, dt);
 }
 
 export const SCENE = { W, H };

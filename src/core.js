@@ -1,5 +1,9 @@
 // core.js — 纯逻辑：无 DOM 依赖，可在 Node 里跑（无头验证用）
 
+// 天气 / 随机事件 / 同行的外部依赖（由 main.js 注入，保持 core 可独立跑）
+let DAYMODS = null;
+export function setDayMods(m) { DAYMODS = m; }
+
 export function mulberry32(a) {
   return function () {
     a |= 0; a = (a + 0x6d2b79f5) | 0;
@@ -94,6 +98,11 @@ export function makeGame(DATA) {
       patience: num('patience_ticks', 600),
       browse: num('browse_ticks', 80),
       queueCap: num('queue_cap', 8),
+    sellEventMax: num('sell_event_max', 4),
+    sellEventGap: num('sell_event_gap', 1500),
+    signaturePriceUp: num('signature_price_up_pct', 40),
+    signatureSpeedUp: num('signature_speed_up_pct', 20),
+    signatureSurface: num('signature_surface_cost', 3),
       w1: num('score_w1', 0.4), w2: num('score_w2', 0.35),
       w3: num('score_w3', 0.15), w4: num('score_w4', 0.1),
       targetBase: num('target_revenue_base', 150),
@@ -181,6 +190,13 @@ export function makeGame(DATA) {
       lastSettle: null,
       history: [],
       bonusPicked: [],
+      signature: null,          // 招牌菜 foodId：一轮内不可更换
+      weather: 'clear',
+      events: [],
+      eventMods: null,
+      eventSeen: {},
+      eventCounts: {},
+      rival: null,
     };
     return base;
   };
@@ -204,6 +220,13 @@ export function makeGame(DATA) {
     // 跨日：成品最多留 1 天（简化为丢弃上一日剩余，保留在 carry 里过夜的由 prep 阶段处理）
     s.dayTriggers = {};
     s.sell = null;
+
+    // 天气 / 随机事件 / 同行：必须在 rng 与供应商就位之后、menu 就位之后
+    if (typeof DAYMODS !== 'undefined' && DAYMODS) {
+      DAYMODS.rollWeather(G);
+      DAYMODS.rollStockEvents(G);
+      DAYMODS.rollRival(G);
+    }
   };
 
   // ---------------------------------------------------------------- 供应商
@@ -225,7 +248,7 @@ export function makeGame(DATA) {
       stock: 40 + Math.floor(G.rng() * 80) }));
     const _unused = all;
 ;
-    out.push({ name: '夜市综合批发', markup: 0.12, items: mixed, closed: false, mixed: true });
+    out.push({ name: '夜市综合批发', markup: 0.12, items: mixed, closed: false, mixed: true, core: true });
     // 品类档
     const chs = Object.keys(channels).sort(() => G.rng() - 0.5);
     const n = 3 + Math.floor(G.rng() * 2);
@@ -313,7 +336,10 @@ export function makeGame(DATA) {
         if (STAGES.indexOf(st.from) >= baseIdx) m += st.minutes / 10;
       });
     });
-    return Math.max(0.4, m * 0.6 + G.B.prepBatch / 20);
+    let out = Math.max(0.4, m * 0.6 + G.B.prepBatch / 20);
+    // 招牌练熟了，出餐更快
+    if (G.s.signature === food.id) out *= 1 - (G.B.signatureSpeedUp || 20) / 100;
+    return out;
   };
 
   G.rawCapacity = function (food) {
@@ -334,9 +360,54 @@ export function makeGame(DATA) {
     }
   };
 
+  /** 招牌菜：同一轮只能定一道，定了不可换。占更多台面，但同属性的菜必须让位。 */
+  G.setSignature = function (foodId) {
+    const s = G.s;
+    if (s.signature) return { ok: false, msg: '招牌已经定了，这一轮不能换' };
+    const f = FOOD[foodId];
+    if (!f) return { ok: false, msg: '没有这道菜' };
+    if (f.utensil && !s.utensils.includes(f.utensil) && !f.sellWo) {
+      return { ok: false, msg: `没有${UT[f.utensil] ? UT[f.utensil].name : f.utensil}，做不了招牌` };
+    }
+    s.signature = foodId;
+    // 上架招牌本身
+    const m = s.menu.find((x) => x.foodId === foodId);
+    if (m) m.onMenu = true;
+    else s.menu.push({ foodId, price: f.price, onMenu: true });
+    // 同属性的其他菜必须下架
+    const tags = f.tags;
+    s.menu.forEach((x) => {
+      if (x.foodId === foodId) return;
+      const g = FOOD[x.foodId];
+      if (g && g.tags.some((t) => tags.includes(t))) {
+        x.onMenu = false;
+        if (s.premade[x.foodId]) delete s.premade[x.foodId];
+      }
+    });
+    return { ok: true, removed: s.menu.filter((x) => !x.onMenu).length };
+  };
+
+  /** 这道菜和招牌冲突吗（招牌自己不算） */
+  G.conflictsSignature = function (foodId) {
+    const s = G.s;
+    if (!s.signature || s.signature === foodId) return false;
+    const sig = FOOD[s.signature];
+    const f = FOOD[foodId];
+    if (!sig || !f) return false;
+    return f.tags.some((t) => sig.tags.includes(t));
+  };
+
   G.toggleMenu = function (foodId) {
     const s = G.s;
     const i = s.menu.findIndex((m) => m.foodId === foodId);
+    // 上架时如果和招牌冲突，直接拒绝
+    const willOn = i >= 0 ? !s.menu[i].onMenu : true;
+    if (willOn && G.conflictsSignature(foodId)) {
+      const sig = FOOD[s.signature];
+      const v = G.validateMenu();
+      v.issues.push({ level: 'error', msg: `${FOOD[foodId].name} 和招牌「${sig.name}」抢同一批客人，上不了` });
+      return v;
+    }
     if (i >= 0) { if (s.menu[i].onMenu) s.menu[i].onMenu = false; else s.menu[i].onMenu = true; }
     else {
       const f = FOOD[foodId];
@@ -363,6 +434,10 @@ export function makeGame(DATA) {
       if (f.utensil && s.utensils.includes(f.utensil) && !m._uCounted) { /* 厨具按件计 */ }
     });
     s.utensils.forEach((u) => { if (UT[u]) used += UT[u].space; });
+    // 招牌要摆显眼位置，额外占台面
+    if (s.signature && s.menu.some((m) => m.foodId === s.signature && m.onMenu)) {
+      used += (G.B.signatureSurface || 3);
+    }
     return used;
   };
 
@@ -446,6 +521,17 @@ export function makeGame(DATA) {
       if (op0(tier) === 'time_reduce_pct' && tier.v2) mods.trafficMul *= 1 + tier.v2 / 100;
     });
     function op0(t) { return t ? t.op : null; }
+    // 天气 / 随机事件 / 同行竞争：统一乘进来
+    if (typeof DAYMODS !== 'undefined' && DAYMODS && DAYMODS.modsFor) {
+      const dm = DAYMODS.modsFor(G);
+      mods.trafficMul *= dm.trafficMul;
+      mods.priceMul *= dm.priceMul;
+      mods.serveMul *= dm.serveMul;
+      mods.demandMul = dm.demandMul || {};
+      mods.weather = dm.weather || null;
+    } else {
+      mods.demandMul = {};
+    }
     return mods;
   };
 
@@ -480,6 +566,9 @@ export function makeGame(DATA) {
     });
     const used = G.surfaceUsed();
     if (used > G.B.surface) issues.push({ level: 'error', msg: `台面超了 ${(used - G.B.surface).toFixed(1)} 格` });
+    if (s.signature && !s.menu.some((m) => m.foodId === s.signature && m.onMenu)) {
+      issues.push({ level: 'warn', msg: '招牌菜没上架，等于白定了' });
+    }
     return { issues, used, cap: G.B.surface };
   };
 
@@ -500,10 +589,16 @@ export function makeGame(DATA) {
       mods,
       pricesYesterday: s.pricesYesterday || {},
       queueCap: G.B.queueCap,
+      eventCount: 0,
+      lastEventTick: 0,
       done: false,
     };
     // 进入出摊钩子
     G.firePhaseHook('on_phase_enter');
+    // 排好这一晚的随机事件时刻表
+    if (typeof DAYMODS !== 'undefined' && DAYMODS && DAYMODS.planSellEvents) {
+      DAYMODS.planSellEvents(G);
+    }
     return s.sell;
   };
 
@@ -626,6 +721,11 @@ export function makeGame(DATA) {
       }
     }
 
+    // 出摊随机事件
+    if (typeof DAYMODS !== 'undefined' && DAYMODS && DAYMODS.tickSellEvents) {
+      DAYMODS.tickSellEvents(G);
+    }
+
     // QTE 倒计时：超时算没接住
     if (S.qte && !S.qte.ended) {
       S.qte.left--;
@@ -636,7 +736,9 @@ export function makeGame(DATA) {
 
     // 厨具加工
     for (const u in S.jobs) {
-      const slots = UT[u] ? UT[u].slots : 1;
+      const base = UT[u] ? UT[u].slots : 1;
+      const slots = (S.slotsOverride && S.slotsOverride[u] != null)
+        ? S.slotsOverride[u] : base;
       const q = S.jobs[u];
       let active = 0;
       for (let i = 0; i < q.length; i++) {
@@ -660,10 +762,11 @@ export function makeGame(DATA) {
     const onMenu = s.menu.filter((m) => m.onMenu);
     // 按「该标签上架款数 × 属性需求权重」加权：招牌越集中，客流越集中
     const w = {};
+    const dm = (G.s.sell && G.s.sell.mods && G.s.sell.mods.demandMul) || {};
     onMenu.forEach((m) => {
       FOOD[m.foodId].tags.forEach((t) => {
         const tg = TAG[t];
-        w[t] = (w[t] || 0) + (tg ? tg.weight : 1) * 0.5;
+        w[t] = (w[t] || 0) + (tg ? tg.weight : 1) * 0.5 * (dm[t] || 1);
       });
     });
     const keys = Object.keys(w);
@@ -839,7 +942,9 @@ export function makeGame(DATA) {
       : job.fresh >= G.B.freshTiers[2] ? 2 : job.fresh >= G.B.freshTiers[3] ? 3 : 4;
     if (tierIdx >= 4) { S.lost++; return; }
     const freshMul = [1, 0.9, 0.8, 0.6][tierIdx] || 0.6;
-    const price = job.price * freshMul * mods.profitMul * mods.priceMul;
+    let price = job.price * freshMul * mods.profitMul * mods.priceMul;
+    // 招牌溢价
+    if (s.signature === job.foodId) price *= 1 + (G.B.signaturePriceUp || 40) / 100;
     S.revenue += price;
     S.served++;
     let sat = 4.6 + mods.satisfactionAdd - (1 - job.fresh) * 1.6;

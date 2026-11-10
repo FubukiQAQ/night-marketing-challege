@@ -236,6 +236,36 @@ export function renderMenu(o) {
   el('bar').innerHTML = `<span>${d ? '继续上次进度，或开新一轮。' : '点上面的按钮开始。'}</span>`;
 }
 
+
+/* ---------------------------------------------------------------- 今日天气 / 事件 */
+function weatherOf(G) {
+  const list = (G.DATA && G.DATA.weather) || [];
+  return list.find((w) => w.id === (G.s.weather || 'clear')) || list[0] || null;
+}
+
+/** 天气 + 今日事件的一条横带；两个阶段都用它 */
+function dayStrip(G) {
+  const w = weatherOf(G);
+  const evs = G.s.events || [];
+  const rival = G.s.rival;
+
+  const weatherChip = w ? `<span class="day-chip wx-${w.id}" title="${w.desc}">
+      ${icon(w.icon, 20)}<b>${w.name}</b><span class="day-chip-desc">${w.desc}</span>
+    </span>` : '';
+
+  const evChips = evs.map((e) => `<span class="day-chip ev ${e.good ? 'good' : 'bad'}">
+      <b>${e.name}</b><span class="day-chip-desc">${e.title}</span>
+    </span>`).join('');
+
+  const rivalChip = rival && rival.strength > 0.02
+    ? `<span class="day-chip rival" title="他会抢走一部分客人，你越强他越努力">
+        <b>${rival.name}</b><span class="day-chip-desc">抢客 ${Math.round(rival.strength * 100)}%</span>
+      </span>` : '';
+
+  if (!weatherChip && !evChips && !rivalChip) return '';
+  return `<div class="day-strip">${weatherChip}${evChips}${rivalChip}</div>`;
+}
+
 /* ---------------------------------------------------------------- 备货 */
 function recipeText(G, f, opts) {
   const s = G.s;
@@ -373,6 +403,7 @@ export function renderStock(G) {
     <div class="stock-top">
       <div class="panel stock-shelf-panel">
         <h3 class="panel-title">今天的供应商 · 点格子进货</h3>
+        ${dayStrip(G)}
         <div class="sup-tabs">${tabs}</div>
         ${shelf}
       </div>
@@ -410,10 +441,14 @@ export function renderPrep(G) {
   const mods = G.effects();
   const avail = G.availableFoods();
 
+  const sigId = s.signature || null;
+  const sigFood = sigId ? G.FOOD[sigId] : null;
   const foodRows = avail.map((f) => {
     const m = s.menu.find((x) => x.foodId === f.id);
     const on = m && m.onMenu;
     const hasUt = !f.utensil || s.utensils.includes(f.utensil);
+    const isSig = sigId === f.id;
+    const clash = G.conflictsSignature(f.id);
     const raw = G.rawCapacity(f);
     const pre = s.premade[f.id] ? s.premade[f.id].n : 0;
     const recipeLine = f.recipe.map((r) => {
@@ -427,17 +462,25 @@ export function renderPrep(G) {
       const tr = G.DATA.traits.traits.find((x) => x.tag === t);
       return `<span class="tiny" style="color:${tagColor(t)}">${tg ? tg.name : t}${tr && act[tr.id] ? '✓' : ''}</span>`;
     }).join(' ');
-    return `<div class="food ${on ? 'on' : ''}" data-fid="${f.id}">
+    const sigBadge = isSig
+      ? `<span class="sig-badge">招牌 +${G.B.signaturePriceUp}%</span>` : '';
+    const clashNote = clash
+      ? `<span class="clash-note">与招牌「${sigFood ? sigFood.name : ''}」冲突</span>` : '';
+    const sigBtn = (!sigId && hasUt)
+      ? `<button class="small sig-btn" data-act="signature" data-f="${f.id}">设为招牌</button>` : '';
+
+    return `<div class="food ${on ? 'on' : ''} ${isSig ? 'sig' : ''} ${clash ? 'clash' : ''}" data-fid="${f.id}">
       <span>${icon(f.sprite, 44)}</span>
       <span>
-        <span class="food-name">${f.name} ${tags}${hasUt ? '' : '<span class="warn tiny">缺厨具</span>'}</span>
-        <span class="food-sub">空间 ${f.space} 格 · 现做 ${(f.serveTicks / 200).toFixed(2)}s · 备好 ${pre} 份 · 食材够 ${raw} 份</span>
+        <span class="food-name">${f.name} ${tags}${sigBadge}${hasUt ? '' : '<span class="warn tiny">缺厨具</span>'}${clashNote}</span>
+        <span class="food-sub">空间 ${f.space} 格${isSig ? ` +${G.B.signatureSurface} 招牌位` : ''} · 现做 ${(f.serveTicks / 200).toFixed(2)}s · 备好 ${pre} 份 · 食材够 ${raw} 份</span>
         <div class="recipe">配方 ${recipeLine} <span class="muted">· 一份约 ${G.prepMinutesFor(f).toFixed(1)} 分钟</span></div>
       </span>
-      <span style="display:flex;gap:4px;align-items:center">
+      <span style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
         ${on ? `<input type="number" step="0.5" min="1" value="${m.price}" data-act="price" data-f="${f.id}">` : ''}
-        <button class="small ${on ? 'danger' : ''}" data-act="toggle" data-f="${f.id}">${on ? '下架' : '上架'}</button>
+        <button class="small ${on ? 'danger' : ''}" data-act="toggle" data-f="${f.id}" ${clash ? 'disabled' : ''}>${on ? '下架' : '上架'}</button>
         ${on ? `<button class="small" data-act="prep" data-f="${f.id}">备10份</button>` : ''}
+        ${sigBtn}
       </span>
     </div>`;
   }).join('');
@@ -533,6 +576,7 @@ export function renderPrep(G) {
     <div class="col-main">
       <div class="panel"><h3 class="panel-title">${icon('ui/ui_trend_up.png', 18)} 餐品库（点"上架"加入今日菜单）</h3>
         ${intro ? `<div class="day-note"><b>第 ${s.day} 天 · ${intro.title}</b><span>${intro.text}</span></div>` : ''}
+        ${dayStrip(G)}
         <div class="food-list">${foodRows}</div>
       </div>
     </div>

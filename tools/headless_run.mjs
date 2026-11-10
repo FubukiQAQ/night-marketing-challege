@@ -2,12 +2,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { makeGame } from '../src/core.js';
+import { makeGame, setDayMods } from '../src/core.js';
+import * as DayMods from '../src/daymods.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const J = (p) => JSON.parse(fs.readFileSync(path.join(root, 'src/data', p), 'utf8'));
 const DATA = { tags: J('tags.json'), traits: J('traits.json'), foods: J('foods.json'),
   ingredients: J('ingredients.json'), utensils: J('utensils.json'), balance: J('balance.json') };
+const JOPT = (p) => { try { return J(p); } catch (e) { return null; } };
+const wj = JOPT('weather.json');
+const ej = JOPT('events.json');
+const rj = JOPT('rival.json');
+DayMods.initDayMods({ weather: wj && wj.list, events: ej && ej.list, rival: rj || null });
+setDayMods(DayMods);
+
 const G = makeGame(DATA);
 G.startRun(null);
 const log = [];
@@ -96,6 +104,10 @@ for (let d = 1; d <= 7; d++) {
   totalScore += st.score;
   const active = Object.keys(G.effects().active);
   const layers = Object.entries(G.s.layers).filter(([, x]) => x > 0).map(([k, x]) => `${k}:${x}`).join(' ');
+  const w = (G.s.weather || 'clear');
+  const evs = (G.s.events || []).map((e) => e.id).join(',') || '-';
+  const rv = G.s.rival ? G.s.rival.strength.toFixed(2) : '-';
+  log.push(`  [${w}] ev=${evs} rival=${rv}`);
   log.push(`day${d} 现金${G.s.cash.toFixed(0)} 花费¥${spend.toFixed(0)} 营收¥${st.revenue.toFixed(0)}/` +
     `${st.target.toFixed(0)} 分=${st.score.toFixed(1)} 卖出${st.served} 流失${st.lost} ` +
     `备${prepped} 菜${menu.length} 词条[${active}] 层{${layers}}` + (errs.length ? ` ⚠${errs.join(';')}` : ''));

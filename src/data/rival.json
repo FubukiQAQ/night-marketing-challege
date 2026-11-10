@@ -1,0 +1,9 @@
+{
+  "_note": "街尾摊：同行竞争。强度随天数与你昨天评分成长；专挑你最集中的属性抢客。",
+  "enabled": true,
+  "name": "街尾那家",
+  "base": 0.1,
+  "dayGain": 0.34,
+  "scoreGain": 0.24,
+  "pressure": 0.5
+}
