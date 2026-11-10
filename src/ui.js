@@ -288,6 +288,7 @@ export function subFromCart(key) {
 
 export function clearCart() { stockView.cart = {}; }
 export function setStockTab(i) { stockView.tab = i; }
+export function getStockTab() { return stockView.tab; }
 
 export function renderStock(G) {
   const s = G.s;
@@ -640,6 +641,7 @@ function renderQte(G) {
       host.dataset.on = '0';
       host.innerHTML = '';
       host.classList.remove('on');
+      document.body.classList.remove('qte-on');
     }
     return;
   }
@@ -650,6 +652,7 @@ function renderQte(G) {
   host.dataset.k = key;
   host.dataset.on = '1';
   host.classList.add('on');
+  document.body.classList.add('qte-on');
 
   const ratio = Math.max(0, q.left / q.total);
   const pos = 1 - ratio;                 // 指针位置 0..1

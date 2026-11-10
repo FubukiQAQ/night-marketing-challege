@@ -4,11 +4,12 @@ import { makeGame, mulberry32 } from './core.js';
 import { loadSave, writeSave, clearSave, describeSave, formatTime } from './save.js';
 import * as Audio from './audio.js';
 import * as Tut from './tutorial.js';
+import * as Touch from './touch.js';
 import { renderSell, resetScene, SCENE } from './render.js';
 import { hud, renderStock, renderPrep, renderSellShell, updateSellStats,
          renderSettle, renderMeta, renderMenu, toast, keepScroll,
          resetStockView, addToCart, subFromCart, clearCart, setStockTab, cartLines,
-         setTraitFilter, renderArchive } from './ui.js';
+         setTraitFilter, renderArchive, getStockTab } from './ui.js';
 
 let DATA = null;
 let pending = null;   // 读到的存档，等玩家在主菜单选
@@ -63,6 +64,13 @@ async function boot() {
   Audio.installUnlock();
   Audio.loadTracks();
   Tut.startPolling(() => G);
+  Touch.initTouch({
+    getGame: () => G,
+    tabs: {
+      get: getStockTab,
+      set: (i) => { setStockTab(i); keepScroll(() => renderStock(G)); },
+    },
+  });
 
   const params = new URLSearchParams(location.search);
   const dev = params.get('dev');
@@ -89,6 +97,29 @@ async function boot() {
     if (dev === 'width') {
       try { document.title = 'W boot'; await probeWidth(); }
       catch (e) { document.title = 'W FAIL ' + e.message; }
+      return;
+    }
+    if (dev === 'touchdiag') {
+      const ph2 = params.get('phase') || 'sell';
+      try {
+        if (ph2 === 'sell') devAuto('sell2');
+        if (params.get('tut') === '1') Tut.enable(G);
+        route();
+        if (params.get('tut') === '1') { Tut.syncPhase(G); Tut.paint(G); }
+        document.title = touchDiag();
+      } catch (e) { document.title = 'DIAG FAIL ' + e.message; }
+      return;
+    }
+    if (dev === 'touch') {
+      const ph = params.get('phase') || 'stock';
+      try {
+        if (ph === 'prep') devAuto('prep');
+        else if (ph === 'sell') devAuto('sell2');
+        else if (ph === 'settle') devAuto('settle');
+        else devAuto('stock');
+        route();
+        document.title = touchAudit() + ' | phase=' + G.s.phase;
+      } catch (e) { document.title = 'TOUCH FAIL ' + e.message; }
       return;
     }
     if (dev === 'tutorial') {
@@ -198,6 +229,13 @@ function showMenu() {
   });
   mountPlayer();
   Tut.syncPhase(G);
+  Touch.rebindTouch({
+    getGame: () => G,
+    tabs: {
+      get: getStockTab,
+      set: (i) => { setStockTab(i); keepScroll(() => renderStock(G)); },
+    },
+  });
 }
 
 function continueGame() {
@@ -409,6 +447,85 @@ function qteShowcase(kind) {
   return 'showcase ' + kind;
 }
 
+
+
+
+/* ---------------------------------------------------------------- 触屏诊断（?dev=touchdiag） */
+function touchDiag() {
+  const out = [];
+  const cc = document.querySelector('.coach-card');
+  if (cc) {
+    const g = getComputedStyle(cc);
+    out.push('coach bg=' + g.backgroundColor + ' z=' + g.zIndex
+      + ' op=' + g.opacity + ' pos=' + g.position);
+  } else out.push('coach=none');
+  const co = document.getElementById('coach');
+  if (co) {
+    const g = getComputedStyle(co);
+    const r = co.getBoundingClientRect();
+    out.push('host z=' + g.zIndex + ' pos=' + g.position
+      + ' rect top=' + Math.round(r.top) + ' bottom=' + Math.round(r.bottom)
+      + ' left=' + Math.round(r.left) + ' right=' + Math.round(r.right));
+  }
+  const hud = document.getElementById('hud');
+  if (hud) {
+    const g = getComputedStyle(hud);
+    const kids = [...hud.children].map((k) => {
+      const r = k.getBoundingClientRect();
+      return (k.className || k.tagName) + ':' + Math.round(r.top) + 'x' + Math.round(r.height);
+    });
+    out.push('hud h=' + Math.round(hud.getBoundingClientRect().height)
+      + ' wrap=' + g.flexWrap + ' [' + kids.join(' ') + ']');
+  }
+  const mb = document.querySelector('#hud button.small.ghost');
+  if (mb) {
+    const g2 = getComputedStyle(mb);
+    out.push('muteBtn cls=' + mb.className
+      + ' minW=' + g2.minWidth + ' w=' + g2.width
+      + ' pad=' + g2.padding + ' flex=' + g2.flex + ' disp=' + g2.display);
+  }
+  const cv = document.getElementById('sellcanvas');
+  if (cv) {
+    const g = getComputedStyle(cv);
+    out.push('canvas z=' + g.zIndex + ' pos=' + g.position);
+  }
+  return 'DIAG ' + out.join(' | ');
+}
+
+/* ---------------------------------------------------------------- 触屏审计（?dev=touch） */
+function touchAudit() {
+  const SEL = 'button, .tile, .sup-tab, .qte-opt, .qte-btn, .food, .bonus, .dish-row, input, select, .mini';
+  const nodes = [...document.querySelectorAll(SEL)];
+  const small = [];
+  nodes.forEach((n) => {
+    const r = n.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;       // 隐藏的不算
+    if (n.offsetParent === null) return;
+    if (r.height < 43.5) {
+      const label = (n.textContent || '').trim().slice(0, 10) || n.className || n.tagName;
+      small.push(label + '=' + Math.round(r.height));
+    }
+  });
+  const vw = document.documentElement.clientWidth;
+  const sw = document.documentElement.scrollWidth;
+  const overflow = sw > vw + 1;
+
+  // 触摸行为检查
+  const probe = document.querySelector('.tile') || document.querySelector('button')
+    || document.querySelector('#sellcanvas');
+  const cs = probe ? getComputedStyle(probe) : null;
+  const tapHl = cs ? cs.webkitTapHighlightColor : '-';
+  const touchAct = cs ? cs.touchAction : '-';
+  const userSel = cs ? cs.userSelect : '-';
+
+  return 'TOUCH vw=' + vw + ' sw=' + sw + (overflow ? ' OVERFLOW!' : ' no-overflow')
+    + ' | targets=' + nodes.length
+    + ' | under44=' + small.length + (small.length ? ' [' + small.slice(0, 6).join(', ') + ']' : '')
+    + ' | probe=' + (probe ? (probe.id || probe.className || probe.tagName) : 'none')
+    + ' tap=' + tapHl + ' action=' + touchAct + ' select=' + userSel
+    + ' | canvasTA=' + (document.getElementById('sellcanvas')
+        ? getComputedStyle(document.getElementById('sellcanvas')).touchAction : '-');
+}
 
 /* ---------------------------------------------------------------- 新手教程自测（?dev=tutorial） */
 function tutorialFlowTest() {
@@ -686,7 +803,7 @@ async function probeWidth() {
 }
 /* ---------------------------------------------------------------- 开发用自动推进 */
 function devAuto(mode) {
-  if (mode === 'stock' || mode === 'cart' || mode === 'tutorial') return;   // 停在备货阶段，方便截图/调试
+  if (mode === 'stock' || mode === 'cart' || mode === 'tutorial' || mode === 'touch') return;   // 停在备货阶段，方便截图/调试
   const core = ['potato', 'rice', 'flour', 'egg', 'chicken_steak', 'starch_sausage',
     'veg_mixed', 'condiment', 'ice', 'cola'];
   core.forEach((ing) => {

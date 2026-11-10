@@ -160,6 +160,7 @@ export function paint(G) {
       host.innerHTML = '';
       host.classList.remove('on');
       clearHL();
+      document.body.classList.remove('tut-on');
       lastKey = '';
     }
     return;
@@ -174,6 +175,7 @@ export function paint(G) {
   host.dataset.k = key;
   host.dataset.on = '1';
   host.classList.add('on');
+  document.body.classList.add('tut-on');
   lastKey = key;
 
   host.innerHTML = `

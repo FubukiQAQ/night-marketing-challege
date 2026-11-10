@@ -21,11 +21,13 @@
   background: rgba(236, 228, 204, 0.96);
   color: var(--ink-on-paper);
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
-  animation: coachIn 0.24s var(--ease) both;
+  /* 不要用 animation 控制 opacity：动画没跑完/被冻结时卡片会整个看不见 */
+  animation: coachIn 0.24s var(--ease);
+  opacity: 1;
 }
 @keyframes coachIn {
-  from { transform: translateY(8px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from { transform: translateY(8px) scale(0.98); }
+  to { transform: translateY(0) scale(1); }
 }
 
 .coach-top {

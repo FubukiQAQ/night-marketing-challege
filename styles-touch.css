@@ -1,0 +1,410 @@
+/* ============================================================
+   触屏优化层
+   目标：手机上不误触、不卡 300ms、不选中文字、不被浏览器手势打断
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1) 全局触屏行为
+   ------------------------------------------------------------ */
+html {
+  /* 禁掉下拉刷新 / 橡皮筋回弹，避免出摊时手指一划页面跑了 */
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  overscroll-behavior: none;
+  /* 长按不要弹系统菜单（按住 QTE 按钮时尤其明显） */
+  -webkit-touch-callout: none;
+}
+
+/* 交互元素：去掉双击缩放延迟与系统高亮，改用我们自己的 :active */
+button,
+.tile,
+.sup-tab,
+.food,
+.dish-row,
+.bonus,
+.qte-opt,
+.qte-btn,
+.qte-lane,
+.stat-chip,
+input,
+select,
+[data-act] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 输入框要能选中文字，别被上一条误伤 */
+input[type='number'],
+input[type='range'],
+input[type='text'] {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* 只有真正需要滚动的容器才允许纵向手势 */
+.scroll,
+.shelf,
+.tnode-list,
+.cart-lines,
+#stage {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 横向滚动的购物车允许横向手势 */
+.cart-lines {
+  touch-action: pan-x;
+}
+
+/* ------------------------------------------------------------
+   2) 触控目标尺寸（比赛要求 ≥44×44 CSS px）
+   ------------------------------------------------------------ */
+@media (pointer: coarse) {
+  button,
+  .sup-tab,
+  .qte-opt,
+  .qte-btn,
+  .tfilter button.small,
+  .mini {
+    min-height: 44px;
+  }
+
+  /* 小按钮在触屏上要撑开，但别把布局撑爆 */
+  button.small,
+  button.ghost {
+    min-height: 40px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  /* 购物车的 − 按钮 */
+  .mini {
+    width: 36px;
+    height: 36px;
+    line-height: 1;
+    font-size: 16px;
+  }
+
+  /* 数字输入：加高，方便点 */
+  input[type='number'] {
+    min-height: 40px;
+    font-size: 16px;   /* <16px 会触发 iOS 自动放大 */
+    width: 68px;
+  }
+
+  /* 滑块：加大触摸区 */
+  input[type='range'] {
+    height: 32px;
+  }
+  input[type='range']::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* 页签：横向可滑，不要换行挤成两行 */
+  .sup-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: pan-x;
+    padding-bottom: 2px;
+  }
+  .sup-tabs::-webkit-scrollbar { display: none; }
+  .sup-tab { flex: 0 0 auto; }
+}
+
+/* ------------------------------------------------------------
+   3) 用 :active 替代 :hover
+   触屏上 :hover 会「粘住」，必须用 :active 给反馈
+   ------------------------------------------------------------ */
+@media (hover: none) {
+  /* 先把所有 hover 效果关掉，避免点完一直亮着 */
+  button:hover,
+  .tile:hover,
+  .sup-tab:hover,
+  .food:hover,
+  .bonus:hover,
+  .qte-opt:hover,
+  .qte-btn:hover,
+  .tfilter button.small:hover,
+  .mini:hover,
+  .dish-row button.small:hover,
+  .food button.small:hover,
+  .sup button.small:hover {
+    filter: none;
+    transform: none;
+  }
+
+  /* 再补上按下反馈 */
+  button:active,
+  .qte-opt:active,
+  .qte-btn:active,
+  .sup-tab:active,
+  .tfilter button.small:active,
+  .mini:active,
+  .food button.small:active,
+  .dish-row button.small:active {
+    filter: brightness(0.88);
+    transform: scale(0.98);
+  }
+
+  .tile:active {
+    transform: scale(0.96);
+    filter: brightness(0.94);
+  }
+
+  .bonus:active {
+    transform: scale(0.98);
+    filter: brightness(1.05);
+  }
+}
+
+/* ------------------------------------------------------------
+   4) 刘海屏安全区
+   ------------------------------------------------------------ */
+@supports (padding: max(0px)) {
+  #viewport {
+    padding-top: max(14px, env(safe-area-inset-top));
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+}
+
+/* ------------------------------------------------------------
+   5) 移动端专项
+   ------------------------------------------------------------ */
+@media (max-width: 768px) {
+  /* 全屏时用动态视口高度，避开地址栏 */
+  #app {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  /* 教程开启时给 stage 留出教练卡的高度，否则会压住购物车 */
+  body.tut-on #stage {
+    padding-bottom: 152px;
+  }
+
+  /* 备货页在手机上不要「挤满一屏」，改成自然流式 + stage 滚动。
+     否则 grid/flex 会把货架压扁，格子溢出面板盖住下面的卡片。 */
+  .stock-root {
+    height: auto;
+    min-height: 100%;
+  }
+  .stock-top {
+    flex: 0 0 auto;
+    grid-template-rows: none;
+    grid-auto-rows: auto;
+  }
+  .stock-shelf-panel,
+  .stock-recipe-panel,
+  .stock-inv-panel {
+    min-height: 0;
+  }
+
+  /* 货架保底高度：宁可让 stage 滚，也别把格子压成一条缝 */
+  .stock-shelf-panel .shelf {
+    min-height: 252px;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  /* 菜谱 / 库存限高，避免整页太长 */
+  .stock-recipe-panel .scroll { max-height: 32vh; }
+  .stock-inv-panel .scroll { max-height: 120px; }
+
+  /* 购物车吸底：滚到哪都能看到，加购后不用往回滚 */
+  .cart {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    background: rgba(20, 18, 14, 0.92);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+  }
+
+  /* 教练卡在触屏上要让开底栏按钮 */
+  #coach {
+    bottom: max(84px, calc(env(safe-area-inset-bottom) + 76px));
+    left: 8px;
+    right: 8px;
+  }
+  .coach-acts button.small {
+    min-height: 36px;
+    padding: 6px 14px;
+  }
+
+  /* 出摊：canvas 不吃手势，避免划一下就滚动 */
+  #sellcanvas {
+    touch-action: none;
+  }
+
+  /* 底栏按钮：整行等分，拇指够得到 */
+  #bar {
+    gap: 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  #bar > button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  /* QTE 按钮做大，拇指按得到 */
+  .qte-btn {
+    min-height: 52px;
+    font-size: 16px;
+  }
+  .qte-opt {
+    min-height: 48px;
+  }
+  .qte-lane {
+    height: 34px;
+    /* 整条时间轴都能点，不用非要点按钮 */
+    cursor: pointer;
+  }
+
+  /* 结算加成卡：整张卡可点，加大 */
+  .bonus {
+    min-height: 96px;
+  }
+
+  /* 格子：保证 44px 以上的点击区 */
+  .tile {
+    min-height: 84px;
+  }
+
+  /* 菜单按钮 */
+  .menu-actions button {
+    min-height: 48px;
+    font-size: 15px;
+  }
+
+  /* ---- 顶栏：单行，别让 flex 把元素挤扁 ---- */
+  #hud {
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 8px 10px;
+    align-items: center;
+    overflow: hidden;
+  }
+  /* 所有子项默认不收缩，只有计时条例外 */
+  #hud > * {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+  .hud-day { font-size: 12px; white-space: nowrap; }
+  .hud-cash { flex: 0 0 auto; }
+  .hud-phase,
+  .hud-meta,
+  .hud-spacer { display: none !important; }
+
+  /* 计时条吃掉剩余宽度，内部的 bar 自己缩 */
+  .hud-timer {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 6px;
+    overflow: hidden;
+  }
+  .hud-timer .bar {
+    flex: 1 1 auto;
+    min-width: 28px;
+    width: auto;
+  }
+  .hud-timer > span { flex: 0 0 auto; }
+
+  /* 顶栏的「音 / 菜单」：小按钮也要够点 */
+  #hud button.small.ghost {
+    min-height: 44px;
+    min-width: 52px;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+
+  /* 宽度断点内也兜一层 44px（不依赖 pointer:coarse） */
+  .sup-tab,
+  button.small,
+  button.ghost,
+  .dish-row button.small,
+  .food button.small,
+  .sup button.small,
+  .tfilter button.small,
+  .coach-acts button.small,
+  select,
+  input[type='number'] {
+    min-height: 44px;
+  }
+
+  /* 页签：单行横滑，加宽方便点中。必须 flex:0 0 auto，
+     否则在纵向 flex 里会被压扁到只剩一条缝 */
+  .sup-tabs {
+    flex: 0 0 auto;
+    min-height: 48px;
+    align-items: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: pan-x;
+    padding-bottom: 2px;
+  }
+  .sup-tabs::-webkit-scrollbar { display: none; }
+  .sup-tab {
+    flex: 0 0 auto;
+    padding: 0 16px;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* ------------------------------------------------------------
+   6) 极窄屏再收紧，但保住 44px 触控
+   ------------------------------------------------------------ */
+@media (max-width: 480px) {
+  .badge,
+  .stat-chip {
+    /* 这些是展示型，不要求 44px，但要能读 */
+    min-height: 0;
+  }
+
+  #bar > button {
+    font-size: 13px;
+  }
+
+  .qte-btn {
+    min-height: 56px;
+  }
+}
+
+/* ------------------------------------------------------------
+   7) 横屏手机：底栏压缩，把高度留给画面
+   ------------------------------------------------------------ */
+@media (max-height: 500px) and (orientation: landscape) {
+  #hud { padding: 6px 12px; }
+  #bar {
+    padding: 6px 12px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+  }
+  #bar > button { min-height: 38px; }
+  #stage { padding: 8px 12px; }
+  .shelf { max-height: 40vh; }
+  #coach {
+    max-width: 260px;
+    left: auto;
+    right: 8px;
+    bottom: 60px;
+  }
+}

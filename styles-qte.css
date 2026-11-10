@@ -24,11 +24,13 @@
   background: rgba(10, 14, 22, 0.72);
   color: #F7EEDD;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-  animation: qteIn 0.22s var(--ease) both;
+  /* 同上：可见性不依赖动画 */
+  animation: qteIn 0.22s var(--ease);
+  opacity: 1;
 }
 @keyframes qteIn {
-  from { transform: translateY(10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from { transform: translateY(10px) scale(0.98); }
+  to { transform: translateY(0) scale(1); }
 }
 
 .qte-head {
@@ -122,9 +124,20 @@
   filter: none;
 }
 
+/* QTE 出现时把教练卡让开（QTE 是限时操作，优先级更高） */
+body.qte-on #coach { display: none !important; }
+
 /* 移动端：贴底、按钮更大，方便拇指 */
 @media (max-width: 768px) {
-  .qte-host { bottom: 8px; }
+  /* 固定贴底：不管页面滚到哪都能看到，且不压住底栏 */
+  .qte-host {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: max(72px, calc(env(safe-area-inset-bottom) + 64px));
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    z-index: 50;
+  }
   .qte {
     min-width: 0;
     max-width: 100%;
