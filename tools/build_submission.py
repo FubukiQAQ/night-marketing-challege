@@ -31,9 +31,10 @@ ANON_RULES = [
 # 这些文件不进任何包（冗余/开发中间物）
 EXCLUDE_PREFIX = ()
 EXCLUDE_EXACT = {
-    'gameset.orig.md',      # 老稿，留仓库里做历史，不进提交包
-    'RUN_ART.bat',          # 美术生成脚本入口，评委用不上
-    'buff.xlsx',            # 旧版规划表，已被 配表/ 取代
+    'gameset.orig.md',        # 老稿，留仓库里做历史，不进提交包
+    'RUN_ART.bat',            # 美术生成脚本入口，评委用不上
+    'build_submission.py',    # 打包脚本本体：含脱敏规则，进包会被自己改坏
+    'buff.xlsx',              # 旧版规划表，已被 配表/ 取代
     'food.xlsx',
 }
 TEXT_EXT = {'.js', '.mjs', '.json', '.md', '.html', '.css', '.py', '.txt',
