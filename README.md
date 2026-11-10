@@ -118,6 +118,7 @@ python tools/check_text.py      # 扫一遍文本文件有没有编码乱码
 | `?dev=regsview` | 造几个熟客，看备餐侧栏 |
 | `?dev=qte2mash` / `?dev=qte2math` | 定场在连点 / 算账 QTE，截图用 |
 | `?dev=qte2rhythm` | 定场在节奏 QTE，截图用 |
+| `?dev=menuprobe` | 主菜单高度探测：菜单内容 vs 可视高度、出处是否溢出 |
 | `?dev=sigview` | 定好招牌后停在备餐，截图用 |
 | `?dev=wx&w=rain` | 定场在指定天气 + 同行强度（`rain` / `hot` / `cold` / `clear`） |
 | `?dev=stock` / `?dev=prep` / `?dev=sell2` / `?dev=settle` / `?dev=meta` | 直接跳到对应阶段 |
@@ -149,6 +150,7 @@ python tools/check_text.py      # 扫一遍文本文件有没有编码乱码
 | `v1.4` | 天气 / 随机事件 / 招牌菜 / 同行竞争：每天不再一样 |
 | `v1.5` | QTE 补齐四类（+连点催单 / 算账找零）、熟客系统 |
 | `v1.6` | 节奏颠勺 QTE（第五类）、完整版 / 匿名版提交包 |
+| `v1.7` | 素材出处上屏（主菜单常驻一行 + 播放器显示作曲）、四版提交包 |
 
 ---
 
@@ -423,6 +425,19 @@ python tools/check_text.py      # 扫一遍文本文件有没有编码乱码
 
 ---
 
+## v1.7 素材出处
+
+按赛事要求把出处写在明处，评审不用翻文档也能看到：
+
+- **主菜单底部**一行常驻：字体 / 音乐 / 美术文案的来源与授权
+- **游戏内播放器**始终显示当前曲目的作曲者（如 `Spring · ConcernedApe`）
+- **`sound/README.md`** 有完整曲目表（曲名 / 作曲 / 出处作品 / 使用阶段 / 分发范围）
+- **README 本节**有素材授权总表
+
+四个提交包与授权说明保持一致，不再出现「文档说不含音频、包里却有」的矛盾。
+
+---
+
 ## 已知限制 / 下一步
 
 - 随机事件已实现 8 个（备货 5 / 出摊 3）；设计稿里的天气细分与更多事件还没做
@@ -437,11 +452,18 @@ python tools/check_text.py      # 扫一遍文本文件有没有编码乱码
 
 ## 素材与授权
 
-- **字体**：[缝合像素字体 Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font)（作者 TakWolf，版本 2026.10.25，简体中文子集），**SIL Open Font License 1.1**。再分发时请附带上游 OFL 全文。
-- **美术素材**：`assets/art_hd/` 为 AI 生成的 HD 精细像素素材（生成脚本与提示词见 `tools/artgen*.py`、`tools/art_prompts.py`）。
-- **BGM**：曲目版权归原作者。C418（Aria Math / Moog City 2）与 ConcernedApe（Spring / Summer）的作品**不随仓库分发**；`-含BGM` 提交包内附 ConcernedApe 两首，仅用于本赛事评审，详见 `sound/README.md`。
-- **数值与文案**：本项目原创。
+| 素材 | 出处 | 授权 |
+|---|---|---|
+| **字体** | [缝合像素字体 Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font)，作者 TakWolf，版本 2026.10.25，简体中文子集 | **SIL Open Font License 1.1**（再分发请附 `LICENSE-OFL.txt` 全文） |
+| **美术** | `assets/art_hd/` 为本项目 AI 生成的 HD 精细像素素材（生成脚本与提示词见 `tools/artgen*.py`、`tools/art_prompts.py`） | 本项目所有 |
+| **数值与文案** | 本项目原创 | 本项目所有 |
+| **BGM · Spring / Summer** | 作曲 **ConcernedApe**（Eric Barone），出自《星露谷物语》(Stardew Valley) OST | 版权归原作者，**非商业引用并标注出处** |
+| **BGM · Aria Math / Moog City 2** | 作曲 **C418**（Daniel Rosenfeld），出自《我的世界》(Minecraft) Volume Beta | 版权归原作者，**任何包都不分发** |
+
+**音频说明**：本项目为武汉大学 2026「零杯」网页设计大赛参赛作品，非商业用途。
+仓库不含任何音频文件（`sound/*.mp3` 已 `.gitignore`）；`-含BGM` 提交包内附 ConcernedApe 的两首，
+仅供本次赛事评审试听，出处见上表与 `sound/README.md`。若权利人提出异议将立即移除。
 
 ## 许可
 
-代码以 MIT 许可发布；字体遵循其自身 OFL 授权；美术素材版权归作者所有。
+代码以 MIT 许可发布；字体遵循其自身 OFL 授权；美术素材版权归作者所有；BGM 版权归各原作者所有。

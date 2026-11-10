@@ -144,6 +144,10 @@ async function boot() {
       catch (e) { document.title = 'SIGNATURE FAIL ' + e.message; }
       return;
     }
+    if (dev === 'menuprobe') {
+      setTimeout(menuProbe, 600);
+      return;
+    }
     if (dev === 'touchdiag') {
       const ph2 = params.get('phase') || 'sell';
       try {
@@ -1216,6 +1220,25 @@ async function probeWidth() {
   document.title = 'W vw=' + vw + ' sw=' + sw + ' | ' + bad.slice(0, 6).join(' ; ');
 }
 /* ---------------------------------------------------------------- 开发用自动推进 */
+
+/* ---------------------------------------------------------------- 菜单高度探测（?dev=menuprobe） */
+function menuProbe() {
+  if (!document.querySelector('#stage .menu')) showMenu();
+  const st = document.getElementById('stage');
+  if (!st) { document.title = 'MENUPROBE no stage'; return; }
+  const mn = st.querySelector('.menu');
+  const cr = mn && mn.querySelector('.menu-credits');
+  const sr = st.getBoundingClientRect();
+  const mr = mn ? mn.getBoundingClientRect() : null;
+  const cbr = cr ? cr.getBoundingClientRect() : null;
+  document.title = 'MENUPROBE stage=' + Math.round(sr.height)
+    + ' menu=' + (mr ? Math.round(mr.height) : '-')
+    + ' scrollH=' + st.scrollHeight + ' clientH=' + st.clientHeight
+    + ' credits=' + (cbr ? Math.round(cbr.bottom) : '-')
+    + ' stageBottom=' + Math.round(sr.bottom)
+    + ' overflow=' + (cbr && cbr.bottom > sr.bottom ? 'YES' : 'no');
+}
+
 function devAuto(mode) {
   if (mode === 'stock' || mode === 'cart' || mode === 'tutorial' || mode === 'touch') return;   // 停在备货阶段，方便截图/调试
   const core = ['potato', 'rice', 'flour', 'egg', 'chicken_steak', 'starch_sausage',

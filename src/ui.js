@@ -232,6 +232,12 @@ export function renderMenu(o) {
       ${d ? `第 ${d.runNo} 轮 · 口碑 ${d.rep} · 存档 ${formatTime(o.savedAt)}` : '进度会存在浏览器里（localStorage）'}
       ${o.hasMeta ? ` · 词条层数 ${o.layerTotal} 点` : ''}
     </div>
+
+    <div class="menu-credits">
+      字体 Fusion Pixel Font（TakWolf，OFL 1.1）·
+      音乐 ConcernedApe《星露谷物语》/ C418《我的世界》（版权归原作者）·
+      美术与文案原创
+    </div>
   </div>`;
   el('bar').innerHTML = `<span>${d ? '继续上次进度，或开新一轮。' : '点上面的按钮开始。'}</span>`;
 }
